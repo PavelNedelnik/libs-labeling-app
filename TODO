@@ -1,0 +1,23 @@
+0. data
+    - cleanup
+    - gitignore?
+1. interactive visualization
+    - refactor legacy
+    - range slider
+    - more sliders?
+2. user-model interface
+    - CRITICAL magic brush
+    - more 
+3. model-visualization interface
+    - CRITICAL how to present results?
+3. segmentation model
+    - preprocessing
+    - baseline
+    - EM
+    - PCK-means
+    - CLTree
+    - NN clf
+4. deployment
+    - dataset hosting
+    - docker
+5. code refactor
