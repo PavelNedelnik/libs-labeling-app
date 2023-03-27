@@ -1,0 +1,1 @@
+generally useful code goes here. later will be refactored to a module
