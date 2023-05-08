@@ -1,6 +1,8 @@
-from SimulatedLIBS import simulation
 import warnings
 import numpy as np
+from SimulatedLIBS import simulation
+from scipy.signal import convolve2d
+from scipy.ndimage import convolve1d
 
 PARAMS = dict(
     Te=1.0,
@@ -50,3 +52,48 @@ def get_spectrum(return_wavelength=True, *args, **kwargs):
     if return_wavelength:
         return spectrum['intensity'].to_numpy(), spectrum['wavelength'].to_numpy()
     return spectrum['intensity'].to_numpy()
+
+
+def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kernel=np.ones(3), noise_var=None):
+    """
+    seed array: in  the shape of the final hyperspectral image. -1 -> unseeded, i -> i-th element
+    """
+    sps, calibration = get_spectra(n, elements, save=cache)
+
+    sps = convolve1d(sps, smooth_kernel, axis=1, mode='nearest')
+    sps = sps + np.random.normal(0, noise_var if noise_var is not None else sps.mean(), sps.shape)
+
+    if kernel is None:
+        kernel = np.asarray([
+            [1, 1, 1],
+            [1, 8, 1],
+            [1, 1, 1],
+        ], dtype=float)
+        kernel /= kernel.sum()
+        
+
+    zero_img = np.zeros(seed_array.shape)
+    zero_img[seed_array == 1] = 1.
+    zero_img[seed_array != 1] = 0.
+
+    for i in range(100):
+        zero_img = convolve2d(zero_img, kernel, mode='same', boundary='fill', fillvalue=.1)
+
+
+    one_img = np.zeros(seed_array.shape)
+    one_img[seed_array == 0] = 1.
+    one_img[seed_array != 0] = 0.
+
+    for i in range(100):
+        one_img = convolve2d(one_img, kernel, mode='same', boundary='fill', fillvalue=.1)
+
+    result = zero_img / (zero_img + one_img)
+    result -= result.min()
+    result /= result.max()
+    result *= n
+    result = np.rint(result)
+
+    X = np.zeros(seed_array.shape + (calibration.shape[0],))
+    for i in range(sps.shape[0]):
+        X[result == i, :] = sps[i]
+    return X, calibration
