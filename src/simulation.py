@@ -58,11 +58,10 @@ def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kerne
     """
     seed array: in  the shape of the final hyperspectral image. -1 -> unseeded, i -> i-th element
     """
+    # spectra palette
     sps, calibration = get_spectra(n, elements, save=cache)
 
-    sps = convolve1d(sps, smooth_kernel, axis=1, mode='nearest')
-    sps = sps + np.random.normal(0, noise_var if noise_var is not None else sps.mean(), sps.shape)
-
+    # populating the image
     if kernel is None:
         kernel = np.asarray([
             [1, 1, 1],
@@ -70,7 +69,6 @@ def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kerne
             [1, 1, 1],
         ], dtype=float)
         kernel /= kernel.sum()
-        
 
     zero_img = np.zeros(seed_array.shape)
     zero_img[seed_array == 1] = 1.
@@ -78,7 +76,6 @@ def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kerne
 
     for i in range(100):
         zero_img = convolve2d(zero_img, kernel, mode='same', boundary='fill', fillvalue=.1)
-
 
     one_img = np.zeros(seed_array.shape)
     one_img[seed_array == 0] = 1.
@@ -93,7 +90,21 @@ def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kerne
     result *= n
     result = np.rint(result)
 
+    # creating labels
+    y = np.zeros(result.shape) - 2
+
+    y[result < n // 5] = 0
+
+    y[(result >= 2 * n // 5) & (result < 3 * n // 5)] = 1
+
+    y[(result >= 4 * n // 5)] = 2
+
+    # replacing labels with spectra
     X = np.zeros(seed_array.shape + (calibration.shape[0],))
     for i in range(sps.shape[0]):
         X[result == i, :] = sps[i]
-    return X, calibration
+
+    # adding noise
+    X = convolve1d(X, smooth_kernel, axis=-1, mode='nearest')
+    X = X + np.random.normal(0, noise_var if noise_var is not None else X.mean(), X.shape)
+    return X, y, calibration
