@@ -14,10 +14,7 @@ PARAMS = dict(
     webscraping='dynamic',
 )
 
-def get_spectra(n, elements, save=False):
-    if elements != sorted(elements):
-        warnings.warn("The elements were sorted to be in alphabetical order.", Warning)
-    elements = sorted(elements) # WARNING! sorts the elements in alphabetical order to prevent duplicities
+def get_spectra(n, elements, background_fluctuation, save=False):
     spectra_path = f'simulated_data/{elements}_{n}.npy'
     calibration_path = f'simulated_data/{elements}_{n}_calibration.npy'
     try:
@@ -28,10 +25,10 @@ def get_spectra(n, elements, save=False):
             raw = list(map(
                 lambda x: get_spectrum(
                     elements=elements,
-                    percentages=[x,100-x],
+                    percentages=[60 + x[1], 30 - x[1], 5, x[0], 5-x[0]],
                     **PARAMS,
                 ),
-                np.linspace(0, 100, n), 
+                list(zip(np.linspace(0, 5, n), background_fluctuation))
             ))
             
             spectra, wavelengths = list(zip(*raw))
@@ -54,12 +51,12 @@ def get_spectrum(return_wavelength=True, *args, **kwargs):
     return spectrum['intensity'].to_numpy()
 
 
-def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kernel=np.ones(3), noise_var=None):
+def generate_map(n, elements, seed_array, background_fluctuation, cache=False, kernel=None, smooth_kernel=np.ones(3) / 3, noise_var=None, noise_mean=None, boundary_size=None):
     """
     seed array: in  the shape of the final hyperspectral image. -1 -> unseeded, i -> i-th element
     """
     # spectra palette
-    sps, calibration = get_spectra(n, elements, save=cache)
+    sps, calibration = get_spectra(n, elements, background_fluctuation, save=cache)
 
     # populating the image
     if kernel is None:
@@ -92,12 +89,12 @@ def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kerne
 
     # creating labels
     y = np.zeros(result.shape) - 2
-
-    y[result < n // 5] = 0
-
-    y[(result >= 2 * n // 5) & (result < 3 * n // 5)] = 1
-
-    y[(result >= 4 * n // 5)] = 2
+    if boundary_size is None:
+        boundary_size = n // 5
+    bucket_size = (n - 2 * boundary_size) // 3
+    y[result < bucket_size] = 0
+    y[(result >= bucket_size + boundary_size) & (result < 2 * bucket_size + boundary_size)] = 1
+    y[(result >= 2 * bucket_size + 2 * boundary_size)] = 2
 
     # replacing labels with spectra
     X = np.zeros(seed_array.shape + (calibration.shape[0],))
@@ -106,5 +103,6 @@ def generate_map(n, elements, seed_array, cache=False, kernel=None, smooth_kerne
 
     # adding noise
     X = convolve1d(X, smooth_kernel, axis=-1, mode='nearest')
-    X = X + np.random.normal(0, noise_var if noise_var is not None else X.mean(), X.shape)
+    X /= X.max()
+    X = X + np.random.normal(noise_mean, noise_var, X.shape)
     return X, y, calibration
