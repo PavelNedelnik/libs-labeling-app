@@ -1,6 +1,5 @@
 from matplotlib import cm
 
-DIM = (70, 70) # hyperspectral map dimensions
 CLASS_COLORS = cm.Set1
 INTENSITY_COLORS = cm.Reds
 RANGE_SLIDER_COLORS = ['red']
