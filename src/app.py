@@ -37,6 +37,9 @@ else:
     raise NotImplemented
 
 
+# precompute mean (mostly) for selected spectrum plot
+mean_spectrum = X.mean(axis=(0, 1))
+
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 app.title = 'LIBS Segmentation'
 
@@ -295,7 +298,7 @@ def update_selected_spectrum(hover):
         x, y = coordinates_from_hover_data(hover)
     else:
         x, y = 0, 0
-    fig = plot_spectra([X.mean(axis=(0, 1)), X[x, y, :]], calibration=calibration, labels=['mean', 'hover'])
+    fig = plot_spectra([mean_spectrum, X[x, y, :]], calibration=calibration, labels=['mean', 'hover'])
     fig.update_layout(
         template='plotly_white',
         plot_bgcolor= 'rgba(0, 0, 0, 0)',
@@ -310,7 +313,7 @@ def update_selected_spectrum(hover):
     Input('model_output', 'data'),
 )
 def update_global_spectrum(y):
-    fig = plot_spectra([X.mean(axis=(0, 1))], calibration=calibration, colormap=style.RANGE_SLIDER_COLORS)
+    fig = plot_spectra([mean_spectrum], calibration=calibration, colormap=style.RANGE_SLIDER_COLORS)
     fig.update_layout(
         template='plotly_white',
         yaxis=dict(fixedrange=True,),
