@@ -2,6 +2,7 @@ import numpy as np
 import json
 import dash_bootstrap_components as dbc
 import plotly.express as px
+import plotly.graph_objects as go
 import utils.style as style
 from dash import Dash, html, Input, Output
 from dash import callback_context as ctx
@@ -25,7 +26,7 @@ import io
 TODO
 add other modes
 """
-mode = 1  # 0 for normal use, 1 for benchmark with known y, 2 for benchmark on simulated data
+mode = 0  # 0 for normal use, 1 for benchmark with known y, 2 for benchmark on simulated data
 num_classes = 3  # might be overriden by dataset choice
 
 if mode == 0:
@@ -215,6 +216,14 @@ if app_mode == App_modes.Benchmark:
         return f'Accuracy: {max(scores)}'
     
 
+def X_map_is_showing_values(output_button, app_mode):
+    if app_mode == App_modes.Default:
+        return (output_button is None or output_button % 2 == 0)
+    elif app_mode == App_modes.Benchmark:
+        return output_button == 2
+    raise NotImplemented('Mode not implemented')
+        
+
 @app.callback(
     Output('x_map', 'figure'),
     Input('global_spectrum', 'relayoutData'),
@@ -224,7 +233,7 @@ if app_mode == App_modes.Benchmark:
     Input('show_output_btn', 'n_clicks' if app_mode == App_modes.Default else 'value'),
     Input('model_output', 'data'),
 )
-def update_X_map(wave_range, manual_labels, screen_resolution, mode, show_segment_btn, y):
+def update_X_map(wave_range, manual_labels, screen_resolution, mode, output_button, y):
     # unpack input values
     manual_labels = np.array(manual_labels)
     screen_resolution = json.loads(screen_resolution)
@@ -233,39 +242,37 @@ def update_X_map(wave_range, manual_labels, screen_resolution, mode, show_segmen
     # broadcast manual labels to multi-channel image
     mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
 
-    if app_mode == App_modes.Default:
-        # two modes
-        if show_segment_btn is None or show_segment_btn % 2 == 0:
-            # show image
-            if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
-                values = X.sum(axis=2)
-            else:
-                values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
-            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
+    # three modes
+    if X_map_is_showing_values(output_button, app_mode):
+        # show values
+        if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
+            values = X.sum(axis=2)
         else:
-            # show segmentation
-            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
+            values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
+        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
+    elif app_mode == App_modes.Default or output_button == 0:
+        # show output
+        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
     else:
-        # three modes
-        if show_segment_btn == 2:
-            # show image
-            if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
-                values = X.sum(axis=2)
-            else:
-                values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
-            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
-        elif show_segment_btn == 0:
-            # show segmentation
-            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
-        else:
-            # show labels
-            img = cm.Set1(y_true / (num_classes), alpha=1) * 255
-            img[y_true == -2, :] = (128, 128, 128, 255)
+        # show labels
+        img = cm.Set1(y_true / (num_classes), alpha=1) * 255
+        img[y_true == -2, :] = (128, 128, 128, 255)
 
     img = np.where(mask == -2, 128, img)
 
-    # generate plot
-    fig = px.imshow(img=img, labels={})
+    fig = go.Figure()
+    fig.add_trace(go.Image(z=img))
+    for i in range(num_classes + 1):
+        fig.add_trace(go.Scatter(x=[[0, 0, 0]], opacity=1, mode='markers',
+                                marker_color=px.colors.qualitative.Set1[i], name=f'class {i}'))
+    fig.add_trace(go.Heatmap(x=[0, 1, 2, 3, 4], y=[0, 1, 2, 3, 4], opacity=0, z=[values.min(), values.max(), values.min(), values.max()], colorscale='reds', colorbar=dict(
+        title="Surface Heat",
+        titleside="top",
+        tickmode="array",
+        tickvals=np.linspace(values.min(), values.max(), 10).tolist(),
+        #labelalias={100: "Hot", 50: "Mild", 2: "Cold"},
+        ticks="outside"
+    )))
     fig.update_traces(
         hovertemplate='<',
         hoverinfo='skip',

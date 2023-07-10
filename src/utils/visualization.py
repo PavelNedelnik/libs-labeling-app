@@ -47,3 +47,10 @@ def plot_spectra(spectra: np.ndarray,
         xaxis_title = "wavelengths (nm)" if axes_titles else "",
         yaxis_title = "relative intensity (-)" if axes_titles else "")
     return fig
+
+
+def plot_values_map(X, wave_mask, mask):
+    values = X[:, :, wave_mask].sum(axis=2)
+    img = np.where(mask >= 0, mask, values)
+
+    img = np.where(mask == -2, 0, img)
