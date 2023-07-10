@@ -4,8 +4,7 @@ from utils.app_modes import App_modes
 
 def make_ml_model_controls(app_mode):
     if app_mode == App_modes.Benchmark:
-        """
-        dbc.Col([dbc.RadioItems(
+        show_button = dbc.RadioItems(
             id="show_output_btn",
             className="btn-group",
             inputClassName="btn-check",
@@ -17,9 +16,9 @@ def make_ml_model_controls(app_mode):
                 {"label": "Show Spectra", "value": 2},
             ],
             value=2
-        )]),
-        """
-        raise NotImplemented
+        )
+    else:
+        show_button = dbc.Button('Show Segmentation', id='show_output_btn', disabled=True)
 
     options = [
         {'label': name, 'value': val} for name, val in model_names.items()
@@ -28,7 +27,7 @@ def make_ml_model_controls(app_mode):
     ml_model_controls = dbc.Card([
         dbc.CardHeader('Model panel'),
         dbc.Row([
-            dbc.Col([dbc.Button('Show Segmentation', id='show_output_btn', disabled=True)]),
+            dbc.Col(show_button),
             dbc.Col([dbc.Button('Train Model', id='retrain_btn')]),
             dbc.Col([dbc.Select(
                 id='model_identifier',

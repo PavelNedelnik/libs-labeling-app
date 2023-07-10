@@ -13,7 +13,7 @@ from components.spectrum_panel import spectrum_panel
 from segmentation.models import models
 from utils.visualization import plot_map, plot_spectra
 from utils.application import mouse_path_to_indices, coordinates_from_hover_data
-from utils.load_scripts import load_toy_dataset
+from utils.load_scripts import load_toy_dataset, load_contest_dataset
 from components.meta import make_meta
 from utils.app_modes import App_modes
 from PIL import Image, ImageDraw
@@ -25,9 +25,16 @@ import io
 TODO
 add other modes
 """
-num_classes = 2
-X, y_true, calibration, dim = load_toy_dataset()
-app_mode = App_modes.Default
+mode = 1  # 0 for normal use, 1 for benchmark with known y, 2 for benchmark on simulated data
+num_classes = 3  # might be overriden by dataset choice
+
+if mode == 0:
+    X, y_true, calibration, dim, app_mode = load_toy_dataset()
+elif mode == 1:
+    X, y_true, calibration, dim, app_mode = load_contest_dataset()
+    num_classes = len(np.unique(y_true))
+else:
+    raise NotImplemented
 
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
@@ -205,31 +212,13 @@ if app_mode == App_modes.Benchmark:
         return f'Accuracy: {max(scores)}'
     
 
-if app_mode == App_modes.Benchmark:
-    """
-    if (app_mode > 0 and show_segment_btn == 2) or (not app_mode > 0 and (show_segment_btn is None or show_segment_btn % 2 == 0)):
-        # show image
-        if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
-            values = X.sum(axis=2)
-        else:
-            values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
-        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
-    elif (app_mode > 0 and show_segment_btn == 0) or not app_mode > 0:
-        # show segmentation
-        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
-    else:
-        img = cm.Set1(y_true / (num_classes), alpha=1) * 255
-        img[y_true == -2, :] = (128, 128, 128, 255)
-    """
-    raise NotImplemented
-
 @app.callback(
     Output('x_map', 'figure'),
     Input('global_spectrum', 'relayoutData'),
     Input('manual_labels', 'data'),
     Input('screen_resolution', 'children'),
     Input('mode_button', 'value'),
-    Input('show_output_btn', 'n_clicks'),  # 'value' if app_mode > 0 else 
+    Input('show_output_btn', 'n_clicks' if app_mode == App_modes.Default else 'value'),
     Input('model_output', 'data'),
 )
 def update_X_map(wave_range, manual_labels, screen_resolution, mode, show_segment_btn, y):
@@ -241,17 +230,34 @@ def update_X_map(wave_range, manual_labels, screen_resolution, mode, show_segmen
     # broadcast manual labels to multi-channel image
     mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
 
-    # choose one of two main modes
-    if show_segment_btn is None or show_segment_btn % 2 == 0:
-        # show image
-        if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
-            values = X.sum(axis=2)
+    if app_mode == App_modes.Default:
+        # two modes
+        if show_segment_btn is None or show_segment_btn % 2 == 0:
+            # show image
+            if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
+                values = X.sum(axis=2)
+            else:
+                values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
+            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
         else:
-            values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
-        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
+            # show segmentation
+            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
     else:
-        # show segmentation
-        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
+        # three modes
+        if show_segment_btn == 2:
+            # show image
+            if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
+                values = X.sum(axis=2)
+            else:
+                values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
+            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
+        elif show_segment_btn == 0:
+            # show segmentation
+            img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
+        else:
+            # show labels
+            img = cm.Set1(y_true / (num_classes), alpha=1) * 255
+            img[y_true == -2, :] = (128, 128, 128, 255)
 
     img = np.where(mask == -2, 128, img)
 
@@ -301,9 +307,9 @@ def update_selected_spectrum(hover):
 
 @app.callback(
     Output('global_spectrum', 'figure'),
-    Input('accuracy', 'children'),  # TODO
+    Input('model_output', 'data'),
 )
-def update_global_spectrum(_):
+def update_global_spectrum(y):
     fig = plot_spectra([X.mean(axis=(0, 1))], calibration=calibration, colormap=style.RANGE_SLIDER_COLORS)
     fig.update_layout(
         template='plotly_white',
