@@ -12,7 +12,7 @@ from components.ml_model_controls import make_ml_model_controls
 from components.spectrum_panel import spectrum_panel
 from segmentation.models import models
 from utils.visualization import plot_map, plot_spectra
-from utils.application import mouse_path_to_indices
+from utils.application import mouse_path_to_indices, coordinates_from_hover_data
 from utils.load_scripts import load_toy_dataset
 from components.meta import make_meta
 from utils.app_modes import App_modes
@@ -286,7 +286,7 @@ def update_X_map(wave_range, manual_labels, screen_resolution, mode, show_segmen
 )
 def update_selected_spectrum(hover):
     if hover is not None:
-        x, y = hover['points'][0]['x'], hover['points'][0]['y']
+        x, y = coordinates_from_hover_data(hover)
     else:
         x, y = 0, 0
     fig = plot_spectra([X.mean(axis=(0, 1)), X[x, y, :]], calibration=calibration, labels=['mean', 'hover'])
