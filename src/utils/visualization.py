@@ -89,7 +89,9 @@ def plot_labels_map(y_true, mask, num_classes):
 
 
 def plot_output_map(y, mask, manual_labels, num_classes):
-    img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
+    manual_labels = cm.Set1(manual_labels / (num_classes), alpha=1.) * 255
+    y = cm.Set1(y / (num_classes), alpha=.8) * 255
+    img = np.where(mask >= 0, manual_labels, y)
     img = np.where(mask == -2, 128, img)
     
     fig = go.Figure()
@@ -100,18 +102,16 @@ def plot_output_map(y, mask, manual_labels, num_classes):
     return fig
 
 
-def plot_values_map(X, calibration, manual_labels, wave_range, mask, num_classes):
-    if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
-        values = X.sum(axis=2)
-    else:
-        values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
-    img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
+def plot_values_map(spectra_image, manual_labels, mask, num_classes):
+    manual_labels = cm.Set1(manual_labels / (num_classes), alpha=1.) * 255
+    spectra_image = cm.Reds((spectra_image - spectra_image.min()) / spectra_image.max(), alpha=1.) * 255
+    img = np.where(mask >= 0, manual_labels, spectra_image)
     img = np.where(mask == -2, 128, img)
 
     fig = go.Figure()
     fig.add_trace(go.Image(z=img))
 
     add_legend(fig, num_classes)
-    add_colorbar(fig, values.min(), values.max())
+    add_colorbar(fig, spectra_image.min(), spectra_image.max())
 
     return fig

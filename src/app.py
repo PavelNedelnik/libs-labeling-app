@@ -212,19 +212,33 @@ if app_mode == App_modes.Benchmark:
             new_y[y == 2] = label2
             scores.append(np.sum((new_y == y_true) & (y_true != -2)) / np.sum((y_true != -2)))
         return f'Accuracy: {max(scores)}'
-        
+
+
+@app.callback(
+    Output('spectra_image', 'data'),
+    Input('global_spectrum', 'relayoutData'),
+)
+def update_manual_labels(wave_range):
+    if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
+        return X.sum(axis=2)
+    return X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
 
 @app.callback(
     Output('x_map', 'figure'),
-    Input('global_spectrum', 'relayoutData'),
+    Input('spectra_image', 'data'),
     Input('manual_labels', 'data'),
     Input('screen_resolution', 'children'),
     Input('mode_button', 'value'),
     Input('show_output_btn', 'n_clicks' if app_mode == App_modes.Default else 'value'),
     Input('model_output', 'data'),
 )
-def update_X_map(wave_range, manual_labels, screen_resolution, mode, output_button, y):
+def update_X_map(spectra_image, manual_labels, screen_resolution, mode, output_button, y):
+    """
+    if ctx.triggered_id in ['mode_button', 'model_output']:
+        raise PreventUpdate
+    """
     # unpack input values
+    spectra_image = np.array(spectra_image)
     manual_labels = np.array(manual_labels)
     screen_resolution = json.loads(screen_resolution)
     y = np.array(y)
@@ -234,12 +248,12 @@ def update_X_map(wave_range, manual_labels, screen_resolution, mode, output_butt
 
     if app_mode == App_modes.Default:
         if (output_button is None or output_button % 2 == 0):
-            fig = plot_values_map(X, calibration, manual_labels, wave_range, mask, num_classes)
+            fig = plot_values_map(spectra_image, manual_labels, mask, num_classes)
         else:
             fig = plot_output_map(y, mask, manual_labels, num_classes)
     elif app_mode == App_modes.Benchmark:
         if output_button == 2:
-            fig = plot_values_map(X, calibration, manual_labels, wave_range, mask, num_classes)
+            fig = plot_values_map(spectra_image, manual_labels, mask, num_classes)
         elif output_button == 0:
             fig = plot_output_map(y, mask, manual_labels, num_classes)
         else:
