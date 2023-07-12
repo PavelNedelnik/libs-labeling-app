@@ -1,8 +1,6 @@
 import numpy as np
 import json
 import dash_bootstrap_components as dbc
-import plotly.express as px
-import plotly.graph_objects as go
 import utils.style as style
 from dash import Dash, html, Input, Output
 from dash import callback_context as ctx
@@ -12,7 +10,7 @@ from components.app_controls import app_controls
 from components.ml_model_controls import make_ml_model_controls
 from components.spectrum_panel import spectrum_panel
 from segmentation.models import models
-from utils.visualization import plot_map, plot_spectra
+from utils.visualization import plot_spectra, plot_values_map, plot_output_map, plot_labels_map
 from utils.application import mouse_path_to_indices, coordinates_from_hover_data
 from utils.load_scripts import load_toy_dataset, load_contest_dataset
 from components.meta import make_meta
@@ -26,7 +24,7 @@ import io
 TODO
 add other modes
 """
-mode = 0  # 0 for normal use, 1 for benchmark with known y, 2 for benchmark on simulated data
+mode = 1  # 0 for normal use, 1 for benchmark with known y, 2 for benchmark on simulated data
 num_classes = 3  # might be overriden by dataset choice
 
 if mode == 0:
@@ -214,14 +212,6 @@ if app_mode == App_modes.Benchmark:
             new_y[y == 2] = label2
             scores.append(np.sum((new_y == y_true) & (y_true != -2)) / np.sum((y_true != -2)))
         return f'Accuracy: {max(scores)}'
-    
-
-def X_map_is_showing_values(output_button, app_mode):
-    if app_mode == App_modes.Default:
-        return (output_button is None or output_button % 2 == 0)
-    elif app_mode == App_modes.Benchmark:
-        return output_button == 2
-    raise NotImplemented('Mode not implemented')
         
 
 @app.callback(
@@ -242,42 +232,27 @@ def update_X_map(wave_range, manual_labels, screen_resolution, mode, output_butt
     # broadcast manual labels to multi-channel image
     mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
 
-    # three modes
-    if X_map_is_showing_values(output_button, app_mode):
-        # show values
-        if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
-            values = X.sum(axis=2)
+    if app_mode == App_modes.Default:
+        if (output_button is None or output_button % 2 == 0):
+            fig = plot_values_map(X, calibration, manual_labels, wave_range, mask, num_classes)
         else:
-            values = X[:, :, (calibration >= float(wave_range["xaxis.range[0]"])) & (calibration <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
-        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Reds((values - values.min()) / values.max(), alpha=1.) * 255)
-    elif app_mode == App_modes.Default or output_button == 0:
-        # show output
-        img = np.where(mask >= 0, cm.Set1(manual_labels / (num_classes), alpha=1.) * 255, cm.Set1(y / (num_classes), alpha=.8) * 255)
+            fig = plot_output_map(y, mask, manual_labels, num_classes)
+    elif app_mode == App_modes.Benchmark:
+        if output_button == 2:
+            fig = plot_values_map(X, calibration, manual_labels, wave_range, mask, num_classes)
+        elif output_button == 0:
+            fig = plot_output_map(y, mask, manual_labels, num_classes)
+        else:
+            fig = plot_labels_map(y, mask, num_classes)
     else:
-        # show labels
-        img = cm.Set1(y_true / (num_classes), alpha=1) * 255
-        img[y_true == -2, :] = (128, 128, 128, 255)
+        raise NotImplemented
 
-    img = np.where(mask == -2, 128, img)
-
-    fig = go.Figure()
-    fig.add_trace(go.Image(z=img))
-    for i in range(num_classes + 1):
-        fig.add_trace(go.Scatter(x=[[0, 0, 0]], opacity=1, mode='markers',
-                                marker_color=px.colors.qualitative.Set1[i], name=f'class {i}'))
-    fig.add_trace(go.Heatmap(x=[0, 1, 2, 3, 4], y=[0, 1, 2, 3, 4], opacity=0, z=[values.min(), values.max(), values.min(), values.max()], colorscale='reds', colorbar=dict(
-        title="Surface Heat",
-        titleside="top",
-        tickmode="array",
-        tickvals=np.linspace(values.min(), values.max(), 10).tolist(),
-        #labelalias={100: "Hot", 50: "Mild", 2: "Cold"},
-        ticks="outside"
-    )))
     fig.update_traces(
-        hovertemplate='<',
-        hoverinfo='skip',
+        colorbar_orientation='h',
+        selector=dict(type='heatmap'),
     )
     fig.update_layout(
+        legend_orientation='h',
         template='plotly_white',
         plot_bgcolor= 'rgba(0, 0, 0, 0)',
         paper_bgcolor= 'rgba(0, 0, 0, 0)',
