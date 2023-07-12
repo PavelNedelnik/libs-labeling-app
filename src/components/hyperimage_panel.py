@@ -1,38 +1,62 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
+btns = [
+    'drawline',
+    'drawopenpath',
+    'drawclosedpath',
+    'drawcircle',
+    'drawrect',
+    'eraseshape',
+]
+
 def make_hyperimage_panel(num_classes):
     hyperimage_controls = dbc.Row([
         dbc.Col([
+            dbc.Card(
+                html.Button('Reset', id='reset_manual_labels_btn', n_clicks=0)
+            ),
+        ]),
+
+        dbc.Col([
+            dbc.Card(
+                html.Button('Apply', id='apply_changes_btn', n_clicks=0)
+            ),
+        ]),
+
+        dbc.Col([
+            dbc.Card(
+                html.Button('Clear', id='clear_changes_btn', n_clicks=0)
+            ),
+        ]),
+
+        dbc.Col([
             dbc.Card([
                 dbc.CardBody(dbc.RadioItems(
-                    id="mode_button",
-                    className="btn-group",
-                    inputClassName="btn-check",
-                    labelClassName="btn btn-outline-primary",
-                    labelCheckedClassName="active",
+                    id='active_class_selector',
+                    className='btn-group',
+                    inputClassName='btn-check',
+                    labelClassName='btn btn-outline-primary',
+                    labelCheckedClassName='active',
                     options=[
-                        {"label": "Reset", "value": -4},
-                        {"label": "Zoom", "value": -3},
-                        {"label": "Clear", "value": -1},
-                        {"label": "Ignore", "value": -2}, ] + [
+                        {'label': f'Ignore', 'value':  - 1} ] + [
                         {'label': f'Class {i}', 'value': i} for i in range(num_classes)
                     ],
                     value=0
                 )),
             ]),
-        ]),
-
-        dbc.Col([
-            dbc.Card([
-                dbc.CardBody(dcc.Input(
-                    id='width',
-                    type='number',
-                    placeholder='Brush width (2)'
-                )),
-            ]),
-        ]),
+        ])
     ])
+
+    """        dbc.Col([
+        dbc.Card([
+            dbc.CardBody(dcc.Input(
+                id='width',
+                type='number',
+                placeholder='Brush width (2)'
+            )),
+        ]),
+    ]),"""
 
     hyperimage_panel = dbc.Card([
         dbc.CardHeader('Image panel'),
@@ -43,9 +67,7 @@ def make_hyperimage_panel(num_classes):
                 dbc.Col(
                     dbc.Card(dbc.CardBody(dcc.Graph(
                         id='x_map',
-                        config={
-                            'displayModeBar': False
-                        },
+                        config={'modeBarButtonsToAdd': btns},
                     ))),
                 )
             ])
