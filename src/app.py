@@ -1,6 +1,7 @@
 import numpy as np
 import json
 import dash_bootstrap_components as dbc
+import plotly.graph_objects as go
 import utils.style as style
 from dash import Dash, html, Input, Output
 from dash import callback_context as ctx
@@ -10,7 +11,7 @@ from components.app_controls import app_controls
 from components.ml_model_controls import make_ml_model_controls
 from components.spectrum_panel import spectrum_panel
 from segmentation.models import models
-from utils.visualization import plot_spectra, plot_values_map, plot_output_map, plot_labels_map
+from utils.visualization import plot_spectra, add_colorbar, add_legend
 from utils.application import mouse_path_to_indices, coordinates_from_hover_data
 from utils.load_scripts import load_toy_dataset, load_contest_dataset
 from components.meta import make_meta
@@ -20,10 +21,6 @@ from base64 import b64decode
 from matplotlib import cm
 import io
 
-"""
-TODO
-add other modes
-"""
 mode = 1  # 0 for normal use, 1 for benchmark with known y, 2 for benchmark on simulated data
 num_classes = 3  # might be overriden by dataset choice
 
@@ -33,7 +30,7 @@ elif mode == 1:
     X, y_true, calibration, dim, app_mode = load_contest_dataset()
     num_classes = len(np.unique(y_true))
 else:
-    raise NotImplemented
+    raise NotImplementedError
 
 
 # precompute mean (mostly) for selected spectrum plot
@@ -164,12 +161,15 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
     if ctx.triggered_id == 'reset_manual_labels_btn' or memory is None:
         return np.zeros(dim) - 1
     if ctx.triggered_id == 'apply_changes_btn':
-        img = Image.fromarray(np.array(memory))
-        draw = ImageDraw.Draw(img)
-        node_coords = mouse_path_to_indices(relayout['shapes'][-1]['path'])
-        draw.line(node_coords, fill=mode, width=int(width) if width else 2, joint='curve')
-        manual_labels = np.asarray(img)
-        return cm.Set1(manual_labels / (num_classes), alpha=1.) * 255
+        for shape in relayout['shapes']:
+            try:
+                img = Image.fromarray(np.array(memory))
+                draw = ImageDraw.Draw(img)
+                node_coords = mouse_path_to_indices(shape['path'])
+                draw.line(node_coords, fill=mode, width=int(width) if width else 2, joint='curve')
+                return np.asarray(img)
+            except ValueError | KeyError:
+                pass
     raise PreventUpdate
 
 
@@ -202,14 +202,14 @@ def update_spectral_intensities(wave_range):
 
 @app.callback(
     Output('image', 'data'),
-    Input('manual_labels', 'value'),
-    Input('model_output', 'value'),
-    Input('spectral_intensities', 'value'),
-    Input('image_output_mode_btn', 'relayoutData'),
+    Input('manual_labels', 'data'),
+    Input('model_output', 'data'),
+    Input('spectral_intensities', 'data'),
+    Input('image_output_mode_btn', 'value'),
 )
 def update_image(manual_labels, model_output, spectral_intensities, mode):
     # TODO string value?
-    if mode == 'show_spectra':
+    if mode is None or mode == 'show_spectra':
         spectral_intensities = np.array(spectral_intensities)
         manual_labels = np.array(manual_labels)
         mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
@@ -228,49 +228,41 @@ def update_image(manual_labels, model_output, spectral_intensities, mode):
         return np.where(mask >= 0, manual_labels_image, model_output_image)
     elif mode == 'show_true_labels':
         pass
-    raise NotImplemented
+    raise NotImplementedError
 
+
+@app.callback(
+    Output('uirevision', 'children'),
+    Input('uirevision', 'children'),
+    Input('reset_manual_labels_btn', 'n_clicks'),
+    Input('apply_changes_btn', 'n_clicks'),
+    Input('clear_changes_btn', 'n_clicks'),
+)
+def update_revision(memory, *args):
+    try:
+        return str(int(memory) + 1 % 2)
+    except ValueError:
+        return '0'
+    except TypeError:
+        return '0'
 
 
 
 # TODO
 # Input('active_class_selector', 'value'),
 
-
 @app.callback(
     Output('x_map', 'figure'),
     Input('image', 'data'),
-    Input('show_output_btn', 'n_clicks' if app_mode == App_modes.Default else 'value'),
+    Input('uirevision', 'children'),
     Input('screen_resolution', 'children'),
 )
-def update_X_map(spectral_intensities, manual_labels, model_output, mode, output_button, y):
-    """
-    if ctx.triggered_id in ['mode_button', 'model_output']:
-        raise PreventUpdate
-    """
-    # unpack input values
-    spectra_image = np.array(spectra_image)
-    manual_labels = np.array(manual_labels)
-    screen_resolution = json.loads(screen_resolution)
-    y = np.array(y)
+def update_X_map(image, reset_ui, resolution):
+    img = np.array(image)
+    resolution = json.loads(resolution)
 
-    # broadcast manual labels to multi-channel image
-    mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
-
-    if app_mode == App_modes.Default:
-        if (output_button is None or output_button % 2 == 0):
-            fig = plot_values_map(spectra_image, manual_labels, mask, num_classes)
-        else:
-            fig = plot_output_map(y, mask, manual_labels, num_classes)
-    elif app_mode == App_modes.Benchmark:
-        if output_button == 2:
-            fig = plot_values_map(spectra_image, manual_labels, mask, num_classes)
-        elif output_button == 0:
-            fig = plot_output_map(y, mask, manual_labels, num_classes)
-        else:
-            fig = plot_labels_map(y, mask, num_classes)
-    else:
-        raise NotImplemented
+    fig = go.Figure()
+    fig.add_trace(go.Image(z=img))
 
     fig.update_traces(
         colorbar_orientation='h',
@@ -282,15 +274,13 @@ def update_X_map(spectral_intensities, manual_labels, model_output, mode, output
         plot_bgcolor= 'rgba(0, 0, 0, 0)',
         paper_bgcolor= 'rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0, pad=0),
-        #newshape=dict(opacity=0),  # TODO shapes are currently just hidden but not deleted
-        #xaxis=dict(visible=False, range=fig['layout']['xaxis']['range'] if fig else None),
-        #yaxis=dict(visible=False, range=fig['layout']['yaxis']['range'] if fig else None),
-        width=int(min(screen_resolution['height'] * .9, screen_resolution['width'] * .7)),
-        height=int(min(screen_resolution['height'] * .9, screen_resolution['width'] * .7)),
-        #uirevision='None',
-        #shapes=[],  # TODO this does not remove the shapes!
+        width=int(min(resolution['height'] * .9, resolution['width'] * .7)),
+        height=int(min(resolution['height'] * .9, resolution['width'] * .7)),
+        uirevision=reset_ui,
+        shapes=[],  # TODO this does not remove the shapes!
     )
-    #fig.update_shapes(editable=False)
+
+    fig['layout'].update(shapes=[])
 
     return fig
 

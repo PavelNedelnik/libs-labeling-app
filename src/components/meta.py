@@ -11,9 +11,9 @@ def make_meta(dim):
             dcc.Store(id='model_output', data=None),
             dcc.Store(id='spectral_intensities', data=None),
             dcc.Store(id='image', data=None),
-            html.Div(id='test'),  # TODO delete
             dcc.Location(id='url'),
             html.Div(id='screen_resolution', style={'display': 'none'}),
+            html.Div(id='uirevision', style={'display': 'none'}),
             dcc.Download(id='download'),
 
             html.Div(id='accuracy'),

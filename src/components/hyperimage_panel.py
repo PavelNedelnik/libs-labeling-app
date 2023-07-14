@@ -67,6 +67,7 @@ def make_hyperimage_panel(num_classes):
                 dbc.Col(
                     dbc.Card(dbc.CardBody(dcc.Graph(
                         id='x_map',
+                        animate = False,
                         config={'modeBarButtonsToAdd': btns},
                     ))),
                 )

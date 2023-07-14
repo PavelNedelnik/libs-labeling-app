@@ -8,7 +8,7 @@ def make_ml_model_controls(app_mode):
         {"label": "Show Output", "value": 'show_output'},
     ]
     if app_mode == App_modes.Benchmark:
-        output_options.append({"label": "show_true_labels", "value": 2})
+        output_options.append({"label": "Show True Labels", "value": 'show_true_labels'})
 
     show_button = dbc.RadioItems(
         id="image_output_mode_btn",
@@ -17,7 +17,7 @@ def make_ml_model_controls(app_mode):
         labelClassName="btn btn-outline-primary",
         labelCheckedClassName="active",
         options=output_options,
-        value=0,
+        value=output_options[0]['value'],
     )
     
     model_options = [
