@@ -2,13 +2,13 @@ import numpy as np
 import json
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
+import plotly.express as px
 import utils.style as style
-from dash import Dash, html, Input, Output
+from dash import Dash, html, Input, Output, State
 from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
 from components.hyperimage_panel import make_hyperimage_panel
 from components.app_controls import app_controls
-from components.ml_model_controls import make_ml_model_controls
 from components.spectrum_panel import spectrum_panel
 from segmentation.models import models
 from utils.visualization import plot_spectra, add_colorbar, add_legend
@@ -43,32 +43,18 @@ app.layout = html.Div([
     dbc.Container([
         dbc.Row([
             dbc.Col([
-                dbc.Row(
-                    dbc.Col(
-                        make_hyperimage_panel(num_classes)
-                    )
-                ),
-                html.Br(),
-                dbc.Row([
-                    dbc.Col(
-                        app_controls
-                    )
-                ])
+                make_hyperimage_panel(app_mode)
             ], width=7),
             dbc.Col([
-                dbc.Row([
-                    dbc.Col(
-                        make_ml_model_controls(app_mode)
-                    )
-                ]),
-                html.Br(),
-                dbc.Row([
-                    dbc.Col(
-                        spectrum_panel
-                    )
-                ]),
-            ], width=4)
+                spectrum_panel
+            ], width=5)
         ], justify="evenly",),
+        html.Br(),
+        dbc.Row(
+            dbc.Col(
+                app_controls
+            )
+        ),
         html.Br(),
         dbc.Row([
             dbc.Col([make_meta(dim)])
@@ -168,12 +154,14 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
                 node_coords = mouse_path_to_indices(shape['path'])
                 draw.line(node_coords, fill=mode, width=int(width) if width else 2, joint='curve')
                 return np.asarray(img)
-            except ValueError | KeyError:
+            except ValueError:
+                pass
+            except KeyError:
                 pass
     raise PreventUpdate
 
 
-# TODO disable retrain button
+# TODO disable show output button
 @app.callback(
     Output('model_output', 'data'),
     Input('retrain_btn', 'n_clicks'),
@@ -181,7 +169,6 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
     Input('model_identifier', 'value'),
 )
 def update_model_output(retrain, labels, model_id):
-    # TODO crashes for untrained model
     if ctx.triggered_id == 'retrain_btn':
         y_in = np.array(labels).flatten()
         X_in = X.reshape((-1, calibration.shape[0]))
@@ -214,26 +201,30 @@ def update_image(manual_labels, model_output, spectral_intensities, mode):
         manual_labels = np.array(manual_labels)
         mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
 
-        manual_labels_image = cm.Set1(manual_labels / (num_classes), alpha=1.) * 255
-        spectral_image = cm.Reds((spectral_intensities - spectral_intensities.min()) / spectral_intensities.max(), alpha=1.) * 255
-        return np.where(mask >= 0, manual_labels_image, spectral_image)
+        manual_labels_image = cm.Set1(manual_labels / (num_classes + 1), alpha=1.) * 255
+        zmin = spectral_intensities.min()
+        zmax = spectral_intensities.max()
+        spectral_image = cm.Reds((spectral_intensities - zmin) / zmax, alpha=1.) * 255
+        return (np.where(mask >= 0, manual_labels_image, spectral_image), zmin, zmax)
     
     elif mode == 'show_output':
         manual_labels = np.array(manual_labels)
         model_output = np.array(model_output)
         mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
 
-        manual_labels_image = cm.Set1(manual_labels / (num_classes), alpha=1.) * 255
-        model_output_image = cm.Set1(model_output / (num_classes), alpha=.6) * 255
-        return np.where(mask >= 0, manual_labels_image, model_output_image)
+        manual_labels_image = cm.Set1(manual_labels / (num_classes + 1), alpha=1.) * 255
+        model_output_image = cm.Set1(model_output / (num_classes + 1), alpha=.6) * 255
+        return (np.where(mask >= 0, manual_labels_image, model_output_image), 0, 0)
     elif mode == 'show_true_labels':
-        pass
+        img = cm.Set1(y_true / (num_classes + 1), alpha=1) * 255
+        img[y_true == -2, :] = (128, 128, 128, 255)
+        return (img, 0, 0)
     raise NotImplementedError
 
 
 @app.callback(
     Output('uirevision', 'children'),
-    Input('uirevision', 'children'),
+    State('uirevision', 'children'),
     Input('reset_manual_labels_btn', 'n_clicks'),
     Input('apply_changes_btn', 'n_clicks'),
     Input('clear_changes_btn', 'n_clicks'),
@@ -247,10 +238,6 @@ def update_revision(memory, *args):
         return '0'
 
 
-
-# TODO
-# Input('active_class_selector', 'value'),
-
 @app.callback(
     Output('x_map', 'figure'),
     Input('image', 'data'),
@@ -258,11 +245,16 @@ def update_revision(memory, *args):
     Input('screen_resolution', 'children'),
 )
 def update_X_map(image, reset_ui, resolution):
-    img = np.array(image)
+    img, zmin, zmax = image
+    img = np.array(img)
     resolution = json.loads(resolution)
 
     fig = go.Figure()
     fig.add_trace(go.Image(z=img))
+
+    add_legend(fig, num_classes)
+
+    add_colorbar(fig, zmin, zmax)
 
     fig.update_traces(
         colorbar_orientation='h',
@@ -277,10 +269,24 @@ def update_X_map(image, reset_ui, resolution):
         width=int(min(resolution['height'] * .9, resolution['width'] * .7)),
         height=int(min(resolution['height'] * .9, resolution['width'] * .7)),
         uirevision=reset_ui,
-        shapes=[],  # TODO this does not remove the shapes!
+        newshape=dict(line=dict(color=px.colors.qualitative.Set1[0])),
+        updatemenus = list([
+            dict(type = "buttons",
+                direction = "left",
+                active = 0,
+                showactive = True,
+                x = 0.5,
+                y = 1.2,
+                buttons = [
+                    dict(
+                        label = f'Class {i}',
+                        method = "relayout", 
+                        args = [{'newshape.line.color': px.colors.qualitative.Set1[i]}]
+                    ) for i in range(num_classes)
+                ]
+            )
+        ])
     )
-
-    fig['layout'].update(shapes=[])
 
     return fig
 

@@ -52,7 +52,7 @@ def plot_spectra(spectra: np.ndarray,
 
 def add_legend(fig, num_classes):
     for i in range(num_classes + 1):
-        fig.add_trace(go.Scatter(x=[[0, 0, 0]], opacity=1, mode='markers',
+        fig.add_trace(go.Scatter(x=[[0, 0, 0]], mode='markers',
                                 marker_color=px.colors.qualitative.Set1[i], name=f'class {i}'))
     
 
