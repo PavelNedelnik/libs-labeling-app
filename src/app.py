@@ -22,14 +22,13 @@ from base64 import b64decode
 from matplotlib import cm
 import io
 
-mode = 1  # 0 for normal use, 1 for benchmark with known y, 2 for benchmark on simulated data
-num_classes = 3  # might be overriden by dataset choice
+mode = 0
+num_classes=7
 
 if mode == 0:
     X, y_true, calibration, dim, app_mode = load_toy_dataset()
 elif mode == 1:
     X, y_true, calibration, dim, app_mode = load_contest_dataset()
-    num_classes = len(np.unique(y_true))
 else:
     raise NotImplementedError
 
@@ -75,7 +74,7 @@ app.layout = html.Div([
     Input('retrain_btn', 'n_clicks'),
     Input('manual_labels', 'data'),
     Input('model_identifier', 'value'),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def highlight_retrain_btn(*args, **kwargs):
     if ctx.triggered_id == 'retrain_btn':
@@ -89,7 +88,7 @@ def highlight_retrain_btn(*args, **kwargs):
     Input('save_output', 'n_clicks'),
     Input('manual_labels', 'data'),
     Input('model_output', 'data'),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def download_files(l_click, s_click, manual_labels, model_out):
     if ctx.triggered_id == 'save_labels':
@@ -115,7 +114,7 @@ if app_mode == App_modes.Benchmark:
     @app.callback(
         Output('accuracy', 'children'),
         Input('model_output', 'data'),
-        prevent_initial_call=True,
+        prevent_initial_call=True
     )
     def display_accuracy(y):
         y = np.array(y)
@@ -134,8 +133,7 @@ if app_mode == App_modes.Benchmark:
     Input('manual_labels', 'data'),
     Input('apply_changes_btn', 'n_clicks'),
     Input('reset_manual_labels_btn', 'n_clicks'),
-    Input('x_map', 'relayoutData'),
-    # line width
+    Input('x_map', 'relayoutData')
 )
 def update_manual_labels(memory, apply, reset, relayout, width=2):
     if ctx.triggered_id == 'reset_manual_labels_btn' or memory is None:
@@ -160,7 +158,7 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
     Output('model_output', 'data'),
     Input('retrain_btn', 'n_clicks'),
     Input('manual_labels', 'data'),
-    Input('model_identifier', 'value'),
+    Input('model_identifier', 'value')
 )
 def update_model_output(retrain, labels, model_id):
     if ctx.triggered_id == 'retrain_btn':
@@ -172,7 +170,7 @@ def update_model_output(retrain, labels, model_id):
 
 @app.callback(
     Output('spectral_intensities', 'data'),
-    Input('global_spectrum', 'relayoutData'),
+    Input('global_spectrum', 'relayoutData')
 )
 def update_spectral_intensities(wave_range):
     if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
@@ -221,7 +219,7 @@ def update_image(manual_labels, model_output, spectral_intensities, mode):
     State('uirevision', 'children'),
     Input('reset_manual_labels_btn', 'n_clicks'),
     Input('apply_changes_btn', 'n_clicks'),
-    Input('clear_changes_btn', 'n_clicks'),
+    Input('clear_changes_btn', 'n_clicks')
 )
 def update_revision(memory, *args):
     try:
@@ -235,26 +233,26 @@ def update_revision(memory, *args):
 @app.callback(
     Output('x_map', 'figure'),
     Input('image', 'data'),
-    Input('uirevision', 'children'),
+    Input('uirevision', 'children')
 )
 def update_X_map(image, reset_ui):
     img, zmin, zmax = image
     img = np.array(img)
 
     fig = go.Figure()
-    fig.add_trace(go.Image(z=img))
+    fig.add_trace(go.Image(z=img, hovertemplate='x: %{x} <br>y: %{y}'))
 
     add_colorbar(fig, zmin, zmax)
 
     fig.update_layout(
         legend_orientation='h',
         template='plotly_white',
-        plot_bgcolor= 'rgba(0, 0, 0, 0)',
-        paper_bgcolor= 'rgba(0, 0, 0, 0)',
+        plot_bgcolor='rgba(0, 0, 0, 0)',
+        paper_bgcolor='rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0, pad=0),
         uirevision=reset_ui,
         newshape=dict(line=dict(color=px.colors.qualitative.Set1[0])),
-        updatemenus = list([
+        updatemenus=list([
             dict(type = "buttons",
                 direction = "down",
                 active = 0,
@@ -266,14 +264,20 @@ def update_X_map(image, reset_ui):
                         label = f'Class {i}',
                         method = "relayout", 
                         args = [{'newshape.line.color': px.colors.qualitative.Set1[i]}]
-                    ) for i in range(num_classes)
+                    ) for i in range(1, num_classes + 1)
+                ] + [
+                    dict(
+                        label = f'Remove label',
+                        method = "relayout", 
+                        args = [{'newshape.line.color': px.colors.qualitative.Set1[-1]}]
+                    )
                 ]
             ),
             dict(type = "dropdown",
                 active = 0,
                 direction="right",
-                x = 0.1,
-                y = 0,
+                x = 0,
+                y = 0.1,
                 showactive = True,
                 buttons = [
                     dict(
@@ -304,6 +308,11 @@ def update_selected_spectrum(hover):
         plot_bgcolor= 'rgba(0, 0, 0, 0)',
         paper_bgcolor= 'rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0,),
+        legend=dict(
+            bgcolor = 'rgba(0, 0, 0, 0)',
+            x=0,
+            y=1,
+        )
     )
     return fig
 
@@ -313,13 +322,26 @@ def update_selected_spectrum(hover):
     Input('model_output', 'data'),
 )
 def update_global_spectrum(y):
-    fig = plot_spectra([mean_spectrum], calibration=calibration, colormap=style.RANGE_SLIDER_COLORS)
+    spectra = [mean_spectrum]
+    labels = ['global mean']
+    colors = [px.colors.qualitative.Set1[-1]]
+    if y is not None:
+        for cls in np.unique(y):
+            spectra.append(X[y==cls].mean(axis=0))
+            labels.append(f'class {cls} mean')
+            colors.append(px.colors.qualitative.Set1[cls])
+    fig = plot_spectra(spectra=spectra, calibration=calibration, labels=labels, colormap=px.colors.qualitative.Set1)
     fig.update_layout(
         template='plotly_white',
         yaxis=dict(fixedrange=True,),
         plot_bgcolor= 'rgba(0, 0, 0, 0)',
         paper_bgcolor= 'rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0,),
+        legend=dict(
+            bgcolor = 'rgba(0, 0, 0, 0)',
+            x=0,
+            y=1,
+        )
     )
     return fig
 
