@@ -256,11 +256,11 @@ def update_X_map(image, reset_ui):
         newshape=dict(line=dict(color=px.colors.qualitative.Set1[0])),
         updatemenus = list([
             dict(type = "buttons",
-                direction = "left",
+                direction = "down",
                 active = 0,
                 showactive = True,
-                x = 0.5,
-                y = 1.2,
+                x = 0,
+                y = 1,
                 buttons = [
                     dict(
                         label = f'Class {i}',
@@ -268,9 +268,22 @@ def update_X_map(image, reset_ui):
                         args = [{'newshape.line.color': px.colors.qualitative.Set1[i]}]
                     ) for i in range(num_classes)
                 ]
+            ),
+            dict(type = "dropdown",
+                active = 0,
+                direction="right",
+                x = 0.1,
+                y = 0,
+                showactive = True,
+                buttons = [
+                    dict(
+                        label = str(width),
+                        method = "relayout", 
+                        args = [{'newshape.line.width': width}]
+                    ) for width in range(2, 10)
+                ]
             )
         ]),
-        coloraxis_colorbar_x=-0.15
     )
 
     return fig
