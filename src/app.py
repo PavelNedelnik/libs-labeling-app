@@ -7,14 +7,15 @@ import utils.style as style
 from dash import Dash, html, Input, Output, State
 from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
-from components.hyperimage_panel import make_hyperimage_panel
-from components.app_controls import app_controls
+from components.hyperspectral_image import hyperspectral_image
+from components.image_controls import make_control_panel
 from components.spectrum_panel import spectrum_panel
+from components.app_controls import app_controls
+from components.meta import make_meta
 from segmentation.models import models
 from utils.visualization import plot_spectra, add_colorbar, add_legend
 from utils.application import mouse_path_to_indices, coordinates_from_hover_data
 from utils.load_scripts import load_toy_dataset, load_contest_dataset
-from components.meta import make_meta
 from utils.app_modes import App_modes
 from PIL import Image, ImageDraw
 from base64 import b64decode
@@ -41,9 +42,15 @@ app.title = 'LIBS Segmentation'
 
 app.layout = html.Div([
     dbc.Container([
+        dbc.Row(
+            dbc.Col(
+                make_control_panel(app_mode)
+            )
+        ),
+        html.Br(),
         dbc.Row([
             dbc.Col([
-                make_hyperimage_panel(app_mode)
+                hyperspectral_image
             ], width=7),
             dbc.Col([
                 spectrum_panel

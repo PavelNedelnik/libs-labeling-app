@@ -1,18 +1,9 @@
 import dash_bootstrap_components as dbc
-from dash import dcc, html
 from segmentation.models import model_names
 from utils.app_modes import App_modes
 
-btns = [
-    'drawline',
-    'drawopenpath',
-    'drawclosedpath',
-    'drawcircle',
-    'drawrect',
-    'eraseshape',
-]
 
-def make_hyperimage_panel(app_mode):
+def make_control_panel(app_mode):
     output_options = [
         {"label": "Show Spectra", "value": 'show_spectra'},
         {"label": "Show Output", "value": 'show_output'},
@@ -24,7 +15,7 @@ def make_hyperimage_panel(app_mode):
         {'label': name, 'value': val} for name, val in model_names.items()
     ]
 
-    hyperimage_controls = dbc.Row([
+    control_panel = dbc.Card([dbc.CardBody(dbc.Row([
         dbc.Col([
             dbc.Card(
                 dbc.Button('Reset', id='reset_manual_labels_btn', n_clicks=0)
@@ -65,23 +56,6 @@ def make_hyperimage_panel(app_mode):
             options=model_options,
             value=0
         )])
-    ])
+    ]))])
 
-    hyperimage_panel = dbc.Card([
-        dbc.CardHeader('Image panel'),
-        dbc.CardBody([
-            hyperimage_controls,
-            html.Br(),
-            dbc.Row([
-                dbc.Col(
-                    dbc.Card(dbc.CardBody(dcc.Graph(
-                        id='x_map',
-                        animate = False,
-                        config={'modeBarButtonsToAdd': btns},
-                    ))),
-                )
-            ])
-        ])
-    ])
-
-    return hyperimage_panel
+    return control_panel
