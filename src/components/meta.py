@@ -12,7 +12,6 @@ def make_meta(dim):
             dcc.Store(id='spectral_intensities', data=None),
             dcc.Store(id='image', data=None),
             dcc.Location(id='url'),
-            html.Div(id='screen_resolution', style={'display': 'none'}),
             html.Div(id='uirevision', style={'display': 'none'}),
             dcc.Download(id='download'),
 

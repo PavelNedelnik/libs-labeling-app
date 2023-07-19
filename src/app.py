@@ -51,10 +51,10 @@ app.layout = html.Div([
         dbc.Row([
             dbc.Col([
                 hyperspectral_image
-            ], width=7),
+            ], width=8),
             dbc.Col([
                 spectrum_panel
-            ], width=5)
+            ], width=4)
         ], justify="evenly",),
         html.Br(),
         dbc.Row(
@@ -68,19 +68,6 @@ app.layout = html.Div([
         ])
     ], fluid=True)
 ])
-
-
-app.clientside_callback(
-    """
-    function(href) {
-        var w = window.innerWidth;
-        var h = window.innerHeight;
-        return JSON.stringify({'height': h, 'width': w});
-    }
-    """,
-    Output('screen_resolution', 'children'),
-    Input('url', 'href')
-)
 
 
 @app.callback(
@@ -249,32 +236,22 @@ def update_revision(memory, *args):
     Output('x_map', 'figure'),
     Input('image', 'data'),
     Input('uirevision', 'children'),
-    Input('screen_resolution', 'children'),
 )
-def update_X_map(image, reset_ui, resolution):
+def update_X_map(image, reset_ui):
     img, zmin, zmax = image
     img = np.array(img)
-    resolution = json.loads(resolution)
 
     fig = go.Figure()
     fig.add_trace(go.Image(z=img))
 
-    add_legend(fig, num_classes)
-
     add_colorbar(fig, zmin, zmax)
 
-    fig.update_traces(
-        colorbar_orientation='h',
-        selector=dict(type='heatmap'),
-    )
     fig.update_layout(
         legend_orientation='h',
         template='plotly_white',
         plot_bgcolor= 'rgba(0, 0, 0, 0)',
         paper_bgcolor= 'rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0, pad=0),
-        width=int(min(resolution['height'] * .9, resolution['width'] * .7)),
-        height=int(min(resolution['height'] * .9, resolution['width'] * .7)),
         uirevision=reset_ui,
         newshape=dict(line=dict(color=px.colors.qualitative.Set1[0])),
         updatemenus = list([
@@ -292,7 +269,8 @@ def update_X_map(image, reset_ui, resolution):
                     ) for i in range(num_classes)
                 ]
             )
-        ])
+        ]),
+        coloraxis_colorbar_x=-0.15
     )
 
     return fig

@@ -4,14 +4,14 @@ from dash import dcc, html
 selected_spectrum = dbc.Card([
     dbc.CardHeader('Currently selected spectrum'),
     dbc.CardBody([
-        dcc.Graph(id='selected_spectrum'),
+        dcc.Graph(id='selected_spectrum', style={'height':'30vh', 'width':'28vw'},),
     ])
 ])
 
 global_spectrum = dbc.Card([
     dbc.CardHeader('Mean spectrum (resize to change how the total intensity is calculated)'),
     dbc.CardBody([
-        dcc.Graph(id='global_spectrum'),
+        dcc.Graph(id='global_spectrum', style={'height':'30vh', 'width':'28vw'},),
     ])
 ])
 

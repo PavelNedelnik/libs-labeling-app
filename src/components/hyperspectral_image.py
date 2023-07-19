@@ -18,7 +18,8 @@ hyperspectral_image = dbc.Card([
         dcc.Graph(
             id='x_map',
             animate = False,
-            config={'modeBarButtonsToAdd': btns},
+            style={'height':'70vh', 'width':'63vw'},
+            config={'modeBarButtonsToAdd': btns, 'responsive': True}
         ),
     )
 ])
