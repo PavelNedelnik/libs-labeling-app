@@ -246,10 +246,6 @@ def update_X_map(state, image, reset_ui):
         paper_bgcolor='rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0, pad=0),
         uirevision=reset_ui,
-        newshape=dict(
-            line=dict(color=px.colors.qualitative.Set1[1]),
-            label=dict(text='1')
-        ),
         updatemenus=list([
             dict(type = "buttons",
                 direction = "down",
@@ -288,7 +284,15 @@ def update_X_map(state, image, reset_ui):
         ]),
     )
 
-    if state is not None:
+    if state is None:
+        fig.update_layout(
+            dragmode='drawclosedpath',
+            newshape=dict(
+                line=dict(color=px.colors.qualitative.Set1[1]),
+                label=dict(text='1')
+            ),
+        )
+    else:
         fig.update_layout(
             dragmode=state['layout']['dragmode'],
             newshape=state['layout']['newshape'],
