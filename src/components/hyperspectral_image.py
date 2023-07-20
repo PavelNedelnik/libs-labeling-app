@@ -7,7 +7,6 @@ btns = [
     'drawline',
     'drawopenpath',
     'drawclosedpath',
-    'drawcircle',
     'drawrect',
     'eraseshape',
 ]

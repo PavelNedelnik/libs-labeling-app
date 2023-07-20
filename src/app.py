@@ -14,6 +14,7 @@ from components.app_controls import app_controls
 from components.meta import make_meta
 from segmentation.models import models
 from utils.visualization import plot_spectra, add_colorbar, add_legend
+from utils.rasterization import rasterize_and_draw
 from utils.application import mouse_path_to_indices, coordinates_from_hover_data
 from utils.load_scripts import load_toy_dataset, load_contest_dataset
 from utils.app_modes import App_modes
@@ -139,17 +140,10 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
     if ctx.triggered_id == 'reset_manual_labels_btn' or memory is None:
         return np.zeros(dim) - 1
     if ctx.triggered_id == 'apply_changes_btn':
+        memory = np.array(memory)
         for shape in relayout['shapes']:
-            try:
-                img = Image.fromarray(np.array(memory))
-                draw = ImageDraw.Draw(img)
-                node_coords = mouse_path_to_indices(shape['path'])
-                draw.line(node_coords, fill=mode, width=int(width) if width else 2, joint='curve')
-                return np.asarray(img)
-            except ValueError:
-                pass
-            except KeyError:
-                pass
+            memory = rasterize_and_draw(shape, memory)
+        return memory
     raise PreventUpdate
 
 
@@ -232,10 +226,11 @@ def update_revision(memory, *args):
 
 @app.callback(
     Output('x_map', 'figure'),
+    State('x_map', 'figure'),
     Input('image', 'data'),
     Input('uirevision', 'children')
 )
-def update_X_map(image, reset_ui):
+def update_X_map(state, image, reset_ui):
     img, zmin, zmax = image
     img = np.array(img)
 
@@ -251,7 +246,10 @@ def update_X_map(image, reset_ui):
         paper_bgcolor='rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0, pad=0),
         uirevision=reset_ui,
-        newshape=dict(line=dict(color=px.colors.qualitative.Set1[0])),
+        newshape=dict(
+            line=dict(color=px.colors.qualitative.Set1[1]),
+            label=dict(text='1')
+        ),
         updatemenus=list([
             dict(type = "buttons",
                 direction = "down",
@@ -263,13 +261,13 @@ def update_X_map(image, reset_ui):
                     dict(
                         label = f'Class {i}',
                         method = "relayout", 
-                        args = [{'newshape.line.color': px.colors.qualitative.Set1[i]}]
+                        args = [{'newshape.line.color': px.colors.qualitative.Set1[i], 'newshape.label.text': str(i)}]
                     ) for i in range(1, num_classes + 1)
                 ] + [
                     dict(
                         label = f'Remove label',
                         method = "relayout", 
-                        args = [{'newshape.line.color': px.colors.qualitative.Set1[-1]}]
+                        args = [{'newshape.line.color': px.colors.qualitative.Set1[-1], 'newshape.label.text': '-1'}]
                     )
                 ]
             ),
@@ -289,6 +287,12 @@ def update_X_map(image, reset_ui):
             )
         ]),
     )
+
+    if state is not None:
+        fig.update_layout(
+            dragmode=state['layout']['dragmode'],
+            newshape=state['layout']['newshape'],
+        )
 
     return fig
 

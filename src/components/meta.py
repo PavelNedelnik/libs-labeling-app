@@ -6,11 +6,10 @@ def make_meta(dim):
     meta = html.Div(
         [
             # TODO dcc.Store storage type? currently loses data on reload
-            # TODO delete data=None
-            dcc.Store(id='manual_labels', data=None),
-            dcc.Store(id='model_output', data=None),
-            dcc.Store(id='spectral_intensities', data=None),
-            dcc.Store(id='image', data=None),
+            dcc.Store(id='manual_labels'),
+            dcc.Store(id='model_output'),
+            dcc.Store(id='spectral_intensities'),
+            dcc.Store(id='image'),
             dcc.Location(id='url'),
             html.Div(id='uirevision', style={'display': 'none'}),
             dcc.Download(id='download'),
