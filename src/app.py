@@ -151,15 +151,14 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
 @app.callback(
     Output('model_output', 'data'),
     Input('retrain_btn', 'n_clicks'),
-    Input('manual_labels', 'data'),
-    Input('model_identifier', 'value')
+    State('manual_labels', 'data'),
+    State('model_identifier', 'value'),
+    prevent_initial_call=True
 )
 def update_model_output(retrain, labels, model_id):
-    if ctx.triggered_id == 'retrain_btn':
-        y_in = np.array(labels).flatten()
-        X_in = X.reshape((-1, calibration.shape[0]))
-        return models[int(model_id)].fit(X_in, y_in).predict(X_in).reshape(dim)
-    raise PreventUpdate
+    y_in = np.array(labels).flatten()
+    X_in = X.reshape((-1, calibration.shape[0]))
+    return models[int(model_id)].fit(X_in, y_in).predict(X_in).reshape(dim)
 
 
 @app.callback(
