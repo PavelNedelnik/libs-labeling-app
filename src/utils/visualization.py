@@ -23,21 +23,21 @@ def plot_map(values, colormap=cm.Reds):
     return fig
 
 def plot_spectra(spectra: np.ndarray,
-                 calibration: Optional[Iterable]=None,
+                 wavelengths: Optional[Iterable]=None,
                  labels: Optional[Iterable[str]]=None,
                  colormap=px.colors.qualitative.Set2,
                  axes_titles: bool=True,
                  opacity: float = 1.,
                  ):
-    if calibration is None:
-        calibration = np.arange(len(spectra[0]))
+    if wavelengths is None:
+        wavelengths = np.arange(len(spectra[0]))
     if labels is None:
         labels = ["class {}".format(x+1) for x in range(len(spectra))]
     fig = go.Figure()
     for i in range(len(spectra)):
         fig.add_trace(
             go.Scatter(
-                x = calibration,
+                x = wavelengths,
                 y = spectra[i],
                 name = str(labels[i]),
                 line = {'color': colormap[i % len(colormap)]},
