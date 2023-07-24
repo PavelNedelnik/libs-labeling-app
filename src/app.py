@@ -1,10 +1,11 @@
 import numpy as np
+import pandas as pd
 import json
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import plotly.express as px
 import utils.style as style
-from dash import Dash, html, Input, Output, State
+from dash import Dash, html, Input, Output, State, dcc
 from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
 from components.hyperspectral_image import hyperspectral_image
@@ -93,9 +94,9 @@ def highlight_retrain_btn(*args, **kwargs):
 )
 def download_files(l_click, s_click, manual_labels, model_out):
     if ctx.triggered_id == 'save_labels':
-        return {'content': json.dumps(manual_labels), 'filename':'manual_labels.json'}
-    # 'save_output':
-    return {'content': json.dumps(model_out), 'filename':'segmentation_mask.json'}
+        return dcc.send_data_frame(pd.DataFrame(manual_labels).to_csv, "manual_labels.csv")
+    # save_output
+    return dcc.send_data_frame(pd.DataFrame(model_out).to_csv, "full_segmentation.csv")
 
 
 @app.callback(
@@ -106,7 +107,7 @@ def download_files(l_click, s_click, manual_labels, model_out):
 def upload_labels(upload):
     content_type, content_string = upload.split(",")
     decoded = b64decode(content_string)
-    return json.loads(io.BytesIO(decoded).getvalue())
+    return pd.read_csv(io.BytesIO(decoded), sep=',', header=0, index_col=0).values
 
 
 if app_mode == App_modes.Benchmark:
