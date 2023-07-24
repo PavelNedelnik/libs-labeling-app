@@ -203,7 +203,7 @@ def make_model_output_image(model_output, num_classes):
 
 def make_true_output_image():
     img = cm.Set1(y_true / (num_classes + 1), alpha=0.6) * 255
-    img[y_true == -2, :] = cm.Set1(1, alpha=0.6) * 255
+    img[y_true == -2, :] = cm.Set1(np.array([1]), alpha=0.6) * 255
     return img
 
 
@@ -250,6 +250,8 @@ def update_X_map(state, manual_labels, model_output, spectral_intensities, mode,
     
     elif mode == 'show_output':
         check_if_update(ctx, 'model_output', add_input)
+        if model_output is None:
+            raise RuntimeError('Model not trained')  # TODO disable the button
         img, zmin, zmax = make_model_output_image(model_output, num_classes), 0, 0
         img = add_manual_labels(img, manual_labels, num_classes, add_input)
 

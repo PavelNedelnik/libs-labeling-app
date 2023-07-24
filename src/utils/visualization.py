@@ -61,7 +61,7 @@ def add_colorbar(fig, min_val, max_val):
     # TODO tick styling
     fig.add_trace(go.Heatmap(
         x=[0, 1, 2],
-        y=[0, 1, 2],
+        y=[0, 0, 0],
         opacity=0,
         z=[min_val, max_val, max_val],
         colorscale='reds',
@@ -119,7 +119,7 @@ def plot_values_map(spectra_image, manual_labels, mask, num_classes):
 
 def draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes):
     fig = go.Figure()
-    fig.add_trace(go.Image(z=img, hovertemplate='x: %{x} <br>y: %{y}'))
+    fig.add_trace(go.Image(z=img, hovertemplate='x: %{x} <br>y: %{y}', colormodel='rgba256'))
 
     add_colorbar(fig, zmin, zmax)
 
