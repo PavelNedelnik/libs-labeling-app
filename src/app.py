@@ -221,16 +221,6 @@ def check_if_update(ctx, buffer_id, add_input):
         raise PreventUpdate
     if ctx.triggered_id == 'manual_labels' and add_input % 2 == 1:
         raise PreventUpdate
-    
-
-# TODO delete
-@app.callback(
-    Output('test', 'children'),
-    Input('show_input_btn', 'n_clicks'),
-
-)
-def update_test(val):
-    return f'{val}, {type(val)}'
 
 
 @app.callback(

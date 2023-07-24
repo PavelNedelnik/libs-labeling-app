@@ -14,7 +14,6 @@ def make_meta(dim):
             dcc.Download(id='download'),
 
             html.Div(id='accuracy'),
-            html.Div(id='test'),  # TODO delete
         ],
     )
 
