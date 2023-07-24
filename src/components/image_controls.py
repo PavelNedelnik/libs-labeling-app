@@ -17,15 +17,15 @@ def make_control_panel(app_mode):
 
     control_panel = dbc.Card([dbc.CardBody(dbc.Row([
         dbc.Col([
-            dbc.Button('Reset', id='reset_manual_labels_btn', n_clicks=0)
+            dbc.Button('Reset', id='reset_manual_labels_btn', n_clicks=0, color='primary')
         ], width=1),
 
         dbc.Col([
-            dbc.Button('Apply', id='apply_changes_btn', n_clicks=0)
+            dbc.Button('Apply', id='apply_changes_btn', n_clicks=0, color='primary')
         ], width=1),
 
         dbc.Col([
-            dbc.Button('Clear', id='clear_changes_btn', n_clicks=0)
+            dbc.Button('Clear', id='clear_changes_btn', n_clicks=0, color='primary')
         ], width=1),
 
         dbc.Col([
@@ -41,7 +41,11 @@ def make_control_panel(app_mode):
         ]),
 
         dbc.Col([
-            dbc.Button('Train Model', id='retrain_btn')
+            dbc.Button('Showing manual labels', id='show_input_btn', n_clicks=0, color='primary')
+        ], width=2),
+
+        dbc.Col([
+            dbc.Button('Train Model', id='retrain_btn', n_clicks=0, color='primary')
         ], width=1),
 
         dbc.Col([

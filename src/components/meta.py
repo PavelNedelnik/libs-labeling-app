@@ -9,12 +9,12 @@ def make_meta(dim):
             dcc.Store(id='manual_labels'),
             dcc.Loading(children=dcc.Store(id='model_output'), fullscreen=True),
             dcc.Store(id='spectral_intensities'),
-            dcc.Store(id='image'),
             dcc.Location(id='url'),
             html.Div(id='uirevision', style={'display': 'none'}),
             dcc.Download(id='download'),
 
             html.Div(id='accuracy'),
+            html.Div(id='test'),  # TODO delete
         ],
     )
 

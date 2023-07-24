@@ -115,3 +115,57 @@ def plot_values_map(spectra_image, manual_labels, mask, num_classes):
     add_colorbar(fig, spectra_image.min(), spectra_image.max())
 
     return fig
+
+
+def draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes):
+    fig = go.Figure()
+    fig.add_trace(go.Image(z=img, hovertemplate='x: %{x} <br>y: %{y}'))
+
+    add_colorbar(fig, zmin, zmax)
+
+    fig.update_layout(
+        legend_orientation='h',
+        template='plotly_white',
+        plot_bgcolor='rgba(0, 0, 0, 0)',
+        paper_bgcolor='rgba(0, 0, 0, 0)',
+        margin=dict(l=0, r=0, b=0, t=0, pad=0),
+        uirevision=reset_ui,
+        updatemenus=list([
+            dict(type = "buttons",
+                direction = "down",
+                active = 0,
+                showactive = True,
+                x = 0,
+                y = 1,
+                buttons = [
+                    dict(
+                        label = f'Class {i}',
+                        method = "relayout", 
+                        args = [{'newshape.line.color': px.colors.qualitative.Set1[i], 'newshape.label.text': str(i)}]
+                    ) for i in range(1, num_classes + 1)
+                ] + [
+                    dict(
+                        label = f'Remove label',
+                        method = "relayout", 
+                        args = [{'newshape.line.color': px.colors.qualitative.Set1[-1], 'newshape.label.text': '-1'}]
+                    )
+                ]
+            ),
+        ]),
+    )
+
+    if state is None:
+        fig.update_layout(
+            dragmode='drawclosedpath',
+            newshape=dict(
+                line=dict(color=px.colors.qualitative.Set1[1]),
+                label=dict(text='1')
+            ),
+        )
+    else:
+        fig.update_layout(
+            dragmode=state['layout']['dragmode'],
+            newshape=state['layout']['newshape'],
+        )
+
+    return fig

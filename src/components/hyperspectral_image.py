@@ -19,6 +19,6 @@ hyperspectral_image = dbc.Card([
             animate = False,
             style={'height':'70vh', 'width':'63vw'},
             config={'modeBarButtonsToAdd': btns, 'responsive': True}
-        ),
+        )
     )
 ])
