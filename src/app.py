@@ -231,6 +231,19 @@ def update_test(n_clicks):
 
 
 @app.callback(
+    Output('image_output_mode_btn', 'options'),
+    State('image_output_mode_btn', 'options'),
+    Input('retrain_btn', 'n_clicks'),
+    prevent_initial_call=True
+)
+def update_test(options, click):
+    for option in options:
+        if option['value'] == 'show_output':
+            option['disabled'] = False
+    return options
+
+
+@app.callback(
     Output('x_map', 'figure'),
     State('x_map', 'figure'),
     Input('manual_labels', 'data'),

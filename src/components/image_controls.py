@@ -7,7 +7,7 @@ from utils.app_modes import App_modes
 def make_control_panel(app_mode):
     output_options = [
         {'label': 'Show Spectra', 'value': 'show_spectra'},
-        {'label': 'Show Output', 'value': 'show_output'},
+        {'label': 'Show Output', 'value': 'show_output', 'disabled': True},
     ]
     if app_mode == App_modes.Benchmark:
         output_options.append({'label': 'Show True Labels', 'value': 'show_true_labels'})
