@@ -5,7 +5,6 @@ from utils.app_modes import App_modes
 
 
 def make_control_panel(app_mode):
-    manual_labels = dcc.Store(id='manual_labels'),
     output_options = [
         {'label': 'Show Spectra', 'value': 'show_spectra'},
         {'label': 'Show Output', 'value': 'show_output'},
