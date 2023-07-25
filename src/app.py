@@ -157,6 +157,8 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
 )
 def update_model_output(retrain, labels, model_id):
     y_in = np.array(labels).flatten()
+    if all(y_in < 0) and model_id != '0':  # kmeans does not need user input
+        raise PreventUpdate
     X_in = X.reshape((-1, wavelengths.shape[0]))
     return models[int(model_id)].fit(X_in, y_in).predict(X_in).reshape(dim)
 
