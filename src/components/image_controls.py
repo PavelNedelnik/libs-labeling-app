@@ -37,7 +37,7 @@ def make_control_panel(app_mode):
         ]),
 
         dbc.Col([
-            dbc.Button('Showing manual labels', id='show_input_btn', n_clicks=0, color='primary', className="me-1")
+            dbc.Button('Show manual labels', id='show_input_btn', n_clicks=0, color='primary', className="me-1")
         ]),
 
         dbc.Col([

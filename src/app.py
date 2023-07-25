@@ -231,6 +231,29 @@ def update_test(n_clicks):
 
 
 @app.callback(
+    Output('x_map_title', 'children'),
+    Input('image_output_mode_btn', 'value'),
+    Input('show_input_btn', 'n_clicks')
+)
+def update_test(mode, output_clicks):
+    title = 'Hyperspectral map'
+
+    if mode == 'show_spectra':
+        title += ' of total intensity'
+    elif mode == 'show_output':
+        title += ' of predicted labels'
+    elif mode == 'show_true_labels':
+        title += ' of true labels'
+    else:
+        raise NotImplementedError('Mode not recognized')
+
+    if output_clicks % 2 == 0:
+        title += ', showing manual labels'
+
+    return title
+
+
+@app.callback(
     Output('image_output_mode_btn', 'options'),
     State('image_output_mode_btn', 'options'),
     Input('model_output', 'data'),
@@ -258,16 +281,16 @@ def update_X_map(state, manual_labels, model_output, spectral_intensities, mode,
         check_if_update(ctx, 'spectral_intensities', add_input)
         img, zmin, zmax = make_spectral_image(spectral_intensities)
         img = add_manual_labels(img, manual_labels, num_classes, add_input)
-    
     elif mode == 'show_output':
         check_if_update(ctx, 'model_output', add_input)
         img, zmin, zmax = make_model_output_image(model_output, num_classes), 0, 0
         img = add_manual_labels(img, manual_labels, num_classes, add_input)
-
     elif mode == 'show_true_labels':
         check_if_update(ctx, 'no_buffer', add_input)
         img, zmin, zmax = make_true_output_image(), 0, 0
         img = add_manual_labels(img, manual_labels, num_classes, add_input)
+    else:
+        raise NotImplementedError('Mode not recognized')
 
     return draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes)
 

@@ -12,7 +12,7 @@ btns = [
 ]
 
 hyperspectral_image = dbc.Card([
-    dbc.CardHeader('Image panel'),
+    dbc.CardHeader(id='x_map_title'),
     dbc.CardBody(
         dcc.Graph(
             id='x_map',
