@@ -227,7 +227,7 @@ def check_if_update(ctx, buffer_id, add_input):
 
 )
 def update_test(n_clicks):
-    return n_clicks % 2 == 0
+    return n_clicks % 2 == 1
 
 
 @app.callback(
