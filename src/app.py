@@ -233,13 +233,13 @@ def update_test(n_clicks):
 @app.callback(
     Output('image_output_mode_btn', 'options'),
     State('image_output_mode_btn', 'options'),
-    Input('manual_labels', 'data'),
+    Input('model_output', 'data'),
     prevent_initial_call=True
 )
-def update_test(options, manual_labels):
+def update_test(options, model_output):
     for option in options:
         if option['value'] == 'show_output':
-            option['disabled'] = manual_labels is None
+            option['disabled'] = model_output is None
     return options
 
 
@@ -261,8 +261,6 @@ def update_X_map(state, manual_labels, model_output, spectral_intensities, mode,
     
     elif mode == 'show_output':
         check_if_update(ctx, 'model_output', add_input)
-        if model_output is None:
-            raise RuntimeError('Model not trained')  # TODO disable the button
         img, zmin, zmax = make_model_output_image(model_output, num_classes), 0, 0
         img = add_manual_labels(img, manual_labels, num_classes, add_input)
 
