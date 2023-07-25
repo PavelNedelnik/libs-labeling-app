@@ -78,10 +78,10 @@ app.layout = html.Div([
     Input('model_identifier', 'value'),
     prevent_initial_call=True
 )
-def highlight_retrain_btn(*args, **kwargs):
+def highlight_retrain_btn(retrain, manual_labels, model_id):
     if ctx.triggered_id == 'retrain_btn':
         return True
-    return False
+    return manual_labels is not None
 
 
 @app.callback(
@@ -139,7 +139,7 @@ if app_mode == App_modes.Benchmark:
 def update_manual_labels(memory, apply, reset, relayout, width=2):
     if ctx.triggered_id == 'reset_manual_labels_btn' or memory is None:
         return np.zeros(dim) - 1
-    if ctx.triggered_id == 'apply_changes_btn':
+    if ctx.triggered_id == 'apply_changes_btn' and 'shapes' in relayout:
         memory = np.array(memory)
         for shape in relayout['shapes']:
             memory = rasterize_and_draw(shape, memory)
