@@ -233,13 +233,13 @@ def update_test(n_clicks):
 @app.callback(
     Output('image_output_mode_btn', 'options'),
     State('image_output_mode_btn', 'options'),
-    Input('retrain_btn', 'n_clicks'),
+    Input('manual_labels', 'data'),
     prevent_initial_call=True
 )
-def update_test(options, click):
+def update_test(options, manual_labels):
     for option in options:
         if option['value'] == 'show_output':
-            option['disabled'] = False
+            option['disabled'] = manual_labels is None
     return options
 
 
