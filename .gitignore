@@ -134,5 +134,3 @@ data/*
 
 !data/toy_dataset/*
 !data/README.md
-
-config.json

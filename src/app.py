@@ -24,9 +24,8 @@ from base64 import b64decode
 from matplotlib import cm
 import io
 
-config = json.load(open('config.json', 'r'))
-mode = config['mode']
-num_classes = config['num_classes']
+mode = 0
+num_classes = 7
 
 if mode == 0:
     X, y_true, wavelengths, dim, app_mode = load_toy_dataset()
