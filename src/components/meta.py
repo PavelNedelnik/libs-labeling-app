@@ -7,7 +7,6 @@ def make_meta(dim):
         [
             # TODO dcc.Store storage type? currently loses data on reload
             dcc.Store(id='manual_labels'),
-            dcc.Loading(children=dcc.Store(id='model_output'), fullscreen=True),
             dcc.Store(id='spectral_intensities'),
             dcc.Location(id='url'),
             html.Div(id='uirevision', style={'display': 'none'}),

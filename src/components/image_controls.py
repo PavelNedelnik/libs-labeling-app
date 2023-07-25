@@ -1,9 +1,11 @@
 import dash_bootstrap_components as dbc
+from dash import dcc
 from segmentation.models import model_names
 from utils.app_modes import App_modes
 
 
 def make_control_panel(app_mode):
+    manual_labels = dcc.Store(id='manual_labels'),
     output_options = [
         {'label': 'Show Spectra', 'value': 'show_spectra'},
         {'label': 'Show Output', 'value': 'show_output'},
@@ -17,18 +19,6 @@ def make_control_panel(app_mode):
 
     control_panel = dbc.Card([dbc.CardBody(dbc.Row([
         dbc.Col([
-            dbc.Button('Reset', id='reset_manual_labels_btn', n_clicks=0, color='primary')
-        ], width=1),
-
-        dbc.Col([
-            dbc.Button('Apply', id='apply_changes_btn', n_clicks=0, color='primary')
-        ], width=1),
-
-        dbc.Col([
-            dbc.Button('Clear', id='clear_changes_btn', n_clicks=0, color='primary')
-        ], width=1),
-
-        dbc.Col([
             dbc.RadioItems(
                 id='image_output_mode_btn',
                 className='btn-group',
@@ -41,12 +31,26 @@ def make_control_panel(app_mode):
         ]),
 
         dbc.Col([
-            dbc.Button('Showing manual labels', id='show_input_btn', n_clicks=0, color='primary')
-        ], width=2),
+            dbc.ButtonGroup([
+                dbc.Button('Reset', id='reset_manual_labels_btn', n_clicks=0, color='primary'),
+                dbc.Button('Apply', id='apply_changes_btn', n_clicks=0, color='primary'),
+                dbc.Button('Clear', id='clear_changes_btn', n_clicks=0, color='primary')
+            ], className="me-1")
+        ]),
 
         dbc.Col([
-            dbc.Button('Train Model', id='retrain_btn', n_clicks=0, color='primary')
-        ], width=1),
+            dbc.Button('Showing manual labels', id='show_input_btn', n_clicks=0, color='primary', className="me-1")
+        ]),
+
+        dbc.Col([
+            dbc.Button(
+                ['Train Model', dbc.Spinner(size='sm', children=dcc.Store(id='model_output'))],
+                id='retrain_btn',
+                n_clicks=0,
+                color='primary',
+                className="me-1"
+            )
+        ]),
 
         dbc.Col([
             dbc.Select(
@@ -55,7 +59,7 @@ def make_control_panel(app_mode):
                 options=model_options,
                 value=0
             )
-        ], width=2)
+        ])
     ]))])
 
     return control_panel
