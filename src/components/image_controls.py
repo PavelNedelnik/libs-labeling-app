@@ -33,7 +33,6 @@ def make_control_panel(app_mode):
             dbc.ButtonGroup([
                 dbc.Button('Reset', id='reset_manual_labels_btn', n_clicks=0, color='primary'),
                 dbc.Button('Apply', id='apply_changes_btn', n_clicks=0, color='primary'),
-                dbc.Button('Clear', id='clear_changes_btn', n_clicks=0, color='primary')
             ], className="me-1")
         ]),
 
