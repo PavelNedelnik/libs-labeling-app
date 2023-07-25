@@ -131,3 +131,6 @@ dmypy.json
 simulated_data/*.npy
 
 data/*
+
+!data/toy_dataset/*
+!data/README.md
