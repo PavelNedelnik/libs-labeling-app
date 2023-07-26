@@ -1,10 +1,7 @@
 import numpy as np
 import pandas as pd
-import json
 import dash_bootstrap_components as dbc
-import plotly.graph_objects as go
 import plotly.express as px
-import utils.style as style
 from dash import Dash, html, Input, Output, State, dcc
 from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
@@ -14,12 +11,11 @@ from components.spectrum_panel import spectrum_panel
 from components.app_controls import app_controls
 from components.meta import make_meta
 from segmentation.models import models
-from utils.visualization import plot_spectra, add_colorbar, add_legend, draw_hyperspectral_image
+from utils.visualization import plot_spectra, draw_hyperspectral_image
 from utils.rasterization import rasterize_and_draw
-from utils.application import mouse_path_to_indices, coordinates_from_hover_data
+from utils.application import coordinates_from_hover_data
 from utils.load_scripts import load_toy_dataset, load_contest_dataset
 from utils.app_modes import App_modes
-from PIL import Image, ImageDraw
 from base64 import b64decode
 from matplotlib import cm
 import io
