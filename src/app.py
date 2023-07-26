@@ -341,4 +341,6 @@ def update_global_spectrum(y):
 
 # TODO remove debug
 if __name__ == "__main__":
+    print('Launching done. Dash is running on http://127.0.0.1:8050/', flush=True)
     app.run_server(debug=True)
+    pass
