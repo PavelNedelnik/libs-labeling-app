@@ -130,7 +130,10 @@ dmypy.json
 
 simulated_data/*.npy
 
-data/*
+datasets/*
+!datasets/toy_dataset/
+!datasets/toy_dataset/*
+!datasets/README.md
 
-!data/toy_dataset/*
+data/*
 !data/README.md

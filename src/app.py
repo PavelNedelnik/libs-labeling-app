@@ -14,21 +14,16 @@ from segmentation.models import models
 from utils.visualization import plot_spectra, draw_hyperspectral_image
 from utils.rasterization import rasterize_and_draw
 from utils.application import coordinates_from_hover_data
-from utils.load_scripts import load_toy_dataset, load_contest_dataset
+from utils.load_scripts import load_data
 from utils.app_modes import App_modes
 from base64 import b64decode
 from matplotlib import cm
 import io
 
-mode = 0
 num_classes = 7
+app_mode = App_modes.Default
 
-if mode == 0:
-    X, y_true, wavelengths, dim, app_mode = load_toy_dataset()
-elif mode == 1:
-    X, y_true, wavelengths, dim, app_mode = load_contest_dataset()
-else:
-    raise NotImplementedError
+X, y_true, wavelengths, dim = load_data()
 
 
 # precompute mean (mostly) for selected spectrum plot
