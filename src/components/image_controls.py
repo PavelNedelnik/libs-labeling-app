@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-from dash import dcc
+from dash import dcc, html
 from segmentation.models import model_names
 from utils.app_modes import App_modes
 
@@ -48,6 +48,10 @@ def make_control_panel(app_mode):
                 color='primary',
                 className="me-1"
             )
+        ]),
+
+        dbc.Col([
+            html.Div(id='additional_model_arguments')
         ]),
 
         dbc.Col([

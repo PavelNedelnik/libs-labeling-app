@@ -18,6 +18,7 @@ from utils.load_scripts import load_data
 from utils.app_modes import App_modes
 from base64 import b64decode
 from matplotlib import cm
+from sklearn.cluster import KMeans
 import io
 
 num_classes = 7
@@ -138,20 +139,31 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
     raise PreventUpdate
 
 
-# TODO disable show output button
+@app.callback(
+    Output('additional_model_arguments', 'children'),
+    Input('model_identifier', 'value'),
+)
+def update_model_output(model_id):
+    if model_id == '0':
+        return [dbc.Input(type='number', min=2, max=num_classes, step=1, placeholder='Number of classes', value=2)]
+    return []
+
+
 @app.callback(
     Output('model_output', 'data'),
     Input('retrain_btn', 'n_clicks'),
     State('manual_labels', 'data'),
     State('model_identifier', 'value'),
+    State('additional_model_arguments', 'children'),
     prevent_initial_call=True
 )
-def update_model_output(retrain, labels, model_id):
+def update_model_output(retrain, labels, model_id, additional_args):
     y_in = np.array(labels).flatten()
-    if all(y_in < 0) and model_id != '0':  # kmeans does not need user input
+    if all(y_in < 0) and not model_id == '0':  # kmeans is unsupervised
         raise PreventUpdate
     X_in = X.reshape((-1, wavelengths.shape[0]))
-    return models[int(model_id)].fit(X_in, y_in).predict(X_in).reshape(dim)
+    model = models[int(model_id)] if not model_id == '0' else KMeans(n_clusters=additional_args[0]['props']['value'], n_init='auto')
+    return model.fit(X_in, y_in).predict(X_in).reshape(dim)
 
 
 @app.callback(
