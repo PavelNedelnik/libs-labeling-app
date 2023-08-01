@@ -79,25 +79,28 @@ def load_npy_dataset(dataset_path: Path):
 def load_libs_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], np.array, list]:
     for f in dataset_path.glob('**/*.libsdata'):
         try:
-            meta = json.load(open(f.with_suffix('.libsmetadata'), 'r'))
+            meta = json.load(open(f.with_suffix('.libsmetadata'), 'r', encoding='utf8'))
             print('Recognized .libsdata and .libsmetadata pair...', flush=True)
         except:
             print('[WARNING] Failed to load metadata for file {}. Skipping!'.format(f), flush=True)
             continue
 
-        dim = [int(meta['spectra'] + 1), int(meta['wavelengths'])]
+        dim = [int(meta['yPosCount']), int(meta['xPosCount'])]
         print('Dimension loaded...', flush=True)
         X = np.fromfile(open(f, 'rb'), dtype=np.float32)
-        X = np.reshape(X, (int(meta['spectra'] + 1), int(meta['wavelengths'])))
+        print('Data loaded...', flush=True)
+        X = np.reshape(X, (int(meta['spectra']) + 1, int(meta['wavelengths'])))
+        wavelengths, X = X[0], X[1:]
+        print('Wavelengths loaded...', flush=True)
+        X = np.reshape(X, dim + [-1])
         X[::2, :] = X[::2, ::-1]
+        print('Data reshaped...', flush=True)
         print('Spectra loaded...', flush=True)
         y = None  # TODO
         print('No true labels found! Skipping...', flush=True)
-        wavelengths, X = X[0], X[1:]
-        print('Wavelengths loaded...', flush=True)
 
         return X, y, wavelengths, dim
-    raise RuntimeError("Failed to load. No valid .libsdata and .libsmetadata found")
+    raise RuntimeError("Failed to load. No valid .libsdata and .libsmetadata recognized.")
 
 
 def load_h5_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], np.array, list]:
@@ -109,6 +112,7 @@ def load_h5_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], n
     dim = max(f['metadata']['X']) + 1, max(f['metadata']['Y']) + 1
     print('Dimension loaded...', flush=True)
     X = np.array(f['data'])
+    X = np.reshape(X, dim + [-1])
     print('Spectra loaded...', flush=True)
     y = None  # TODO
     print('No true labels found! Skipping...', flush=True)
