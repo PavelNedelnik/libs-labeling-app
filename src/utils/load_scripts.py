@@ -32,8 +32,9 @@ def is_libs_dataset(path):
     return '.libsdata' in contents and '.libsmetadata' in contents
 
 
-def load_data():
-    path = Path('./data')
+def load_data(path: Tuple[str, Path]):
+    if not isinstance(path, Path):
+        path = Path(path)
     for file_path in path.iterdir():
         if is_numpy_dataset(file_path):
             print('Recognized as <numpy dataset>. Loading...', flush=True)
