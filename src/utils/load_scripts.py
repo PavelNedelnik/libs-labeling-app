@@ -99,7 +99,11 @@ def load_libs_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array],
 
         try:
             print('    Loading dimensions...', end='', flush=True)
-            dim = [int(meta['yPosCount']), int(meta['xPosCount'])]
+            try:
+                dim = [int(meta['yPosCount']), int(meta['xPosCount'])]
+            except KeyError:
+                print('\n[WARNING] Dimensions could not be automatically deduced!')
+                dim = input('Please, input the x dimension'), input('Please, input the y dimension')
             print(' Done!', flush=True)
 
             print('    Loading spectra...', end='', flush=True)
