@@ -11,7 +11,14 @@ selected_spectrum = dbc.Card([
         dcc.Graph(
             id='selected_spectrum',
             style={'height':'30vh', 'width':'28vw'},
-            config={'modeBarButtonsToAdd': btns, 'responsive': True}
+            config={
+                'modeBarButtonsToRemove': btns,
+                'responsive': True,
+                'toImageButtonOptions': {
+                    'format': 'svg',
+                    'filename': 'selected_spectrum',
+                }
+            }
         ),
     ])
 ])
@@ -22,7 +29,14 @@ global_spectrum = dbc.Card([
         dcc.Graph(
             id='global_spectrum',
             style={'height':'30vh', 'width':'28vw'},
-            config={'modeBarButtonsToRemove': btns, 'responsive': True}
+            config={
+                'modeBarButtonsToRemove': btns,
+                'responsive': True,
+                'toImageButtonOptions': {
+                    'format': 'svg',
+                    'filename': 'global_spectrum',
+                }
+            }
         ),
     ])
 ])

@@ -18,7 +18,14 @@ hyperspectral_image = dbc.Card([
             id='x_map',
             animate = False,
             style={'height':'70vh', 'width':'63vw'},
-            config={'modeBarButtonsToAdd': btns, 'responsive': True}
+            config={
+                'modeBarButtonsToAdd': btns,
+                'responsive': True,
+                'toImageButtonOptions': {
+                    'format': 'svg',
+                    'filename': 'hyperspectral_map',
+                }
+            }
         )
     )
 ])
