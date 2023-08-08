@@ -10,6 +10,7 @@ def make_meta(dim):
             dcc.Store(id='spectral_intensities'),
             dcc.Location(id='url'),
             html.Div(id='uirevision', style={'display': 'none'}),
+            html.Div(id='last_trained_model', style={'display': 'none'}),
             dcc.Download(id='download'),
 
             html.Div(id='accuracy'),

@@ -17,8 +17,6 @@ models = [
 ]
 
 # maps model names to indices over <models> array
-model_names = {
-    name: i for i, name in enumerate([
+model_names = list(enumerate([
         'Naive KMeans', 'KNN', 'Random Forest', 'PCA_MLP'
-    ])
-}
+]))

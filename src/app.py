@@ -13,7 +13,7 @@ from components.image_controls import make_control_panel
 from components.spectrum_panel import spectrum_panel
 from components.app_controls import app_controls
 from components.meta import make_meta
-from segmentation.models import models
+from segmentation.models import models, model_names
 from utils.visualization import plot_spectra, draw_hyperspectral_image
 from utils.rasterization import rasterize_and_draw
 from utils.application import coordinates_from_hover_data
@@ -246,17 +246,28 @@ def update_test(n_clicks):
 
 
 @app.callback(
+    Output('last_trained_model', 'children'),
+    Input('retrain_btn', 'n_clicks'),
+    State('model_identifier', 'value')
+
+)
+def update_test(click, val):
+    return str(model_names[int(val)][1])
+
+
+@app.callback(
     Output('x_map_title', 'children'),
     Input('image_output_mode_btn', 'value'),
-    Input('show_input_btn', 'n_clicks')
+    Input('show_input_btn', 'n_clicks'),
+    Input('last_trained_model', 'children')
 )
-def update_test(mode, output_clicks):
+def update_test(mode, output_clicks, model_name):
     title = 'Hyperspectral map'
 
     if mode == 'show_spectra':
         title += ' of total intensity'
     elif mode == 'show_output':
-        title += ' of predicted labels'
+        title += ' of predicted labels ({})'.format(model_name)
     elif mode == 'show_true_labels':
         title += ' of true labels'
     else:
@@ -363,7 +374,6 @@ def update_global_spectrum(y):
     return fig
 
 
-# TODO remove debug
 if __name__ == "__main__":
     print('Launching done. Dash is running on http://127.0.0.1:8050/', flush=True)
-    app.run_server(debug=True)
+    app.run_server(debug=False)

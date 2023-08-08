@@ -13,7 +13,7 @@ def make_control_panel(app_mode):
         output_options.append({'label': 'Show True Labels', 'value': 'show_true_labels'})
     
     model_options = [
-        {'label': name, 'value': val} for name, val in model_names.items()
+        {'label': name, 'value': val} for val, name in model_names
     ]
 
     control_panel = dbc.Card([dbc.CardBody(dbc.Row([
