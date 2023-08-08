@@ -3,8 +3,6 @@ import pandas as pd
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import io
-import tkinter
-import tkinter.filedialog
 from dash import Dash, html, Input, Output, State, dcc
 from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
@@ -26,17 +24,7 @@ from sklearn.cluster import KMeans
 num_classes = 7
 app_mode = App_modes.Default
 
-def prompt_file():
-    """Create a Tk file dialog and cleanup when finished"""
-    top = tkinter.Tk()
-    top.withdraw()  # hide window
-    file_name = tkinter.filedialog.askdirectory(parent=top)
-    top.destroy()
-    return file_name
-
-path = prompt_file()
-
-X, y_true, wavelengths, dim = load_data(path)
+X, y_true, wavelengths, dim = load_data()
 
 
 # precompute mean (mostly) for selected spectrum plot
