@@ -38,7 +38,7 @@ def draw_closedpath_mask(path, dim):
     """
     https://dash.plotly.com/annotations
     """
-    cols, rows = svg_path_to_indices(path).T
+    cols, rows = np.maximum(0, svg_path_to_indices(path).T)
     rr, cc = draw.polygon(rows, cols)
     rr, cc = clip_coords(rr, cc, dim)
     mask = np.zeros(dim, dtype=np.bool)
@@ -48,8 +48,7 @@ def draw_closedpath_mask(path, dim):
 
 
 def draw_openpath_mask(path, dim, width):
-    # TODO width
-    cols, rows = svg_path_to_indices(path).T
+    cols, rows = np.maximum(0, svg_path_to_indices(path).T)
     mask = np.zeros(dim, dtype=np.bool)
     for i in range(len(cols) - 1):
         rr, cc = draw.line(rows[i], cols[i], rows[i + 1], cols[i + 1])
@@ -60,7 +59,8 @@ def draw_openpath_mask(path, dim, width):
 
 def draw_rect_mask(shape, dim):
     # coordinates follow different convention
-    y0, y1, x0, x1 = shape['x0'], shape['x1'], shape['y0'], shape['y1']
+    y0, y1 = max(0, shape['x0']), max(0, shape['x1'])
+    x0, x1 = max(0, shape['y0']), max(0, shape['y1'])
     mask = np.zeros(dim, dtype=np.bool)
     rr, cc = draw.rectangle(start=(x0, y0), end=(x1, y1))
     rr, cc = clip_coords(rr, cc, dim)
@@ -70,7 +70,8 @@ def draw_rect_mask(shape, dim):
 
 def draw_line_mask(shape, dim):
     # coordinates follow different convention
-    y0, y1, x0, x1 = round(shape['x0']), round(shape['x1']), round(shape['y0']), round(shape['y1'])
+    y0, y1 = round(max(0, shape['x0'])), round(max(0, shape['x1']))
+    x0, x1 = round(max(0, shape['y0'])), round(max(0, shape['y1']))
     mask = np.zeros(dim, dtype=np.bool)
     rr, cc = draw.line(x0, y0, x1, y1)
     rr, cc = clip_coords(rr, cc, dim)
