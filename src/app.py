@@ -17,11 +17,14 @@ from utils.rasterization import rasterize_and_draw
 from utils.application import coordinates_from_hover_data
 from utils.load_scripts import load_data
 from utils.app_modes import App_modes
+from utils.colors import Set1Colormap
 from base64 import b64decode
 from matplotlib import cm
 from sklearn.cluster import KMeans
 
+
 num_classes = 7
+colormap = Set1Colormap(num_classes)
 app_mode = App_modes.Default
 
 X, y_true, wavelengths, dim = load_data()
@@ -199,19 +202,19 @@ def make_spectral_image(spectral_intensities):
 
 def make_model_output_image(model_output, num_classes):
     model_output = np.array(model_output)
-    return cm.Set1(model_output / (num_classes + 1), alpha=.6) * 255
+    return colormap.get_color_tuples(model_output, 0.6)
 
 
 def make_true_output_image():
-    img = cm.Set1(y_true / (num_classes + 1), alpha=0.6) * 255
-    img[y_true == -2, :] = cm.Set1(np.array([1]), alpha=0.6) * 255
+    img = colormap.get_color_tuples(y_true, 0.6)
+    img[y_true == -2, :] = colormap.get_empty_color_tuple(0.6)
     return img
 
 
 def add_manual_labels(img, manual_labels, num_classes, add_input):
     if add_input % 2 == 0:
         manual_labels = np.array(manual_labels)
-        manual_labels_image = cm.Set1(manual_labels / (num_classes + 1), alpha=1.) * 255
+        manual_labels_image = colormap.get_color_tuples(manual_labels, 1)
         mask = np.repeat(manual_labels[:,:, np.newaxis], 4, axis=2)
         return np.where(mask >= 0, manual_labels_image, img)
     return img
@@ -340,12 +343,12 @@ def update_selected_spectrum(hover):
 def update_global_spectrum(y):
     spectra = [mean_spectrum]
     labels = ['global mean']
-    colors = [px.colors.qualitative.Set1[-1]]
+    colors = [colormap.get_empty_plotly_color()]
     if y is not None:
         for cls in np.unique(y):
             spectra.append(X[y==cls].mean(axis=0))
             labels.append(f'class {cls} mean')
-            colors.append(px.colors.qualitative.Set1[cls])
+            colors.append(colormap.get_plotly_color(cls))
     fig = plot_spectra(spectra=spectra, wavelengths=wavelengths, labels=labels, colormap=colors)
     fig.update_layout(
         template='plotly_white',
