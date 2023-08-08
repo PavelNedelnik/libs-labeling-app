@@ -37,7 +37,9 @@ def prompt_file():
 
 
 def load_data():
+    print('Please, select a folder containing the data to be analyzed...', end='', flush=True)
     path = Path(prompt_file())
+    print(' Done!', flush=True)
     if is_numpy_dataset(path):
         print('Recognized as <numpy dataset>. Loading...', flush=True)
         X, y, wavelengths, dim = load_npy_dataset(path)
