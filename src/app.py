@@ -143,7 +143,7 @@ def update_manual_labels(memory, apply, reset, relayout, width=2):
     Output('additional_model_arguments', 'children'),
     Input('model_identifier', 'value'),
 )
-def update_model_output(model_id):
+def update_additional_model_arguments(model_id):
     if model_id == '0':
         return [dbc.Input(type='number', min=2, max=num_classes, step=1, placeholder='Number of classes', value=2)]
     return []
@@ -239,7 +239,7 @@ def update_test(n_clicks):
     State('model_identifier', 'value')
 
 )
-def update_test(click, val):
+def update_last_trained_model(click, val):
     return str(model_names[int(val)][1])
 
 
@@ -249,7 +249,7 @@ def update_test(click, val):
     Input('show_input_btn', 'n_clicks'),
     Input('last_trained_model', 'children')
 )
-def update_test(mode, output_clicks, model_name):
+def update_x_map_title(mode, output_clicks, model_name):
     title = 'Hyperspectral map'
 
     if mode == 'show_spectra':
@@ -273,7 +273,7 @@ def update_test(mode, output_clicks, model_name):
     Input('model_output', 'data'),
     prevent_initial_call=True
 )
-def update_test(options, model_output):
+def update_image_output_mode_btn(options, model_output):
     for option in options:
         if option['value'] == 'show_output':
             option['disabled'] = model_output is None
