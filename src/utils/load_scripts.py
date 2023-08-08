@@ -114,6 +114,7 @@ def load_h5_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], n
     print('Dimension loaded...', flush=True)
     X = f['data'][()]
     X = np.reshape(X, dim + [-1])
+    X[::2, :] = X[::2, ::-1]
     print('Spectra loaded...', flush=True)
     y = None  # TODO
     print('No true labels found! Skipping...', flush=True)
