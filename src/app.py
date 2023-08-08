@@ -125,7 +125,7 @@ if app_mode == App_modes.Benchmark:
     Output('manual_labels', 'data'),
     State('manual_labels', 'data'),
     Input('apply_changes_btn', 'n_clicks'),
-    Input('reset_manual_labels_btn', 'n_clicks'),
+    Input('reset_manual_labels_btn', 'submit_n_clicks'),
     Input('x_map', 'relayoutData')
 )
 def update_manual_labels(memory, apply, reset, relayout, width=2):
@@ -180,7 +180,7 @@ def update_spectral_intensities(wave_range):
 @app.callback(
     Output('uirevision', 'children'),
     State('uirevision', 'children'),
-    Input('reset_manual_labels_btn', 'n_clicks'),
+    Input('reset_manual_labels_btn', 'submit_n_clicks'),
     Input('apply_changes_btn', 'n_clicks'),
 )
 def update_revision(memory, *args):

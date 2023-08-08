@@ -31,7 +31,11 @@ def make_control_panel(app_mode):
 
         dbc.Col([
             dbc.ButtonGroup([
-                dbc.Button('Reset', id='reset_manual_labels_btn', n_clicks=0, color='primary'),
+                dcc.ConfirmDialogProvider(
+                    children=dbc.Button('Reset', n_clicks=0, color='primary'),
+                    id='reset_manual_labels_btn',
+                    message='Are you sure you want to reset all manual labels?'
+                ),
                 dbc.Button('Apply', id='apply_changes_btn', n_clicks=0, color='primary'),
             ], className="me-1")
         ]),
