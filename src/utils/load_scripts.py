@@ -28,7 +28,7 @@ def is_h5_dataset(path):
 def is_libs_dataset(path):
     if not path.is_dir():
         return False
-    contents = map(lambda f: f.suffix, list(path.iterdir()))
+    contents = list(map(lambda f: f.suffix, list(path.iterdir())))
     return '.libsdata' in contents and '.libsmetadata' in contents
 
 
@@ -109,9 +109,9 @@ def load_h5_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], n
     f = f[list(f.keys())[0]]
     f = f[list(f.keys())[0]]
     f = f['libs']
-    dim = max(f['metadata']['X']) + 1, max(f['metadata']['Y']) + 1
+    dim = [max(f['metadata']['X']) + 1, max(f['metadata']['Y']) + 1]
     print('Dimension loaded...', flush=True)
-    X = np.array(f['data'])
+    X = f['data'][()]
     X = np.reshape(X, dim + [-1])
     print('Spectra loaded...', flush=True)
     y = None  # TODO
