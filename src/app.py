@@ -346,7 +346,7 @@ def update_global_spectrum(y):
             spectra.append(X[y==cls].mean(axis=0))
             labels.append(f'class {cls} mean')
             colors.append(px.colors.qualitative.Set1[cls])
-    fig = plot_spectra(spectra=spectra, wavelengths=wavelengths, labels=labels, colormap=px.colors.qualitative.Set1)
+    fig = plot_spectra(spectra=spectra, wavelengths=wavelengths, labels=labels, colormap=colors)
     fig.update_layout(
         template='plotly_white',
         yaxis=dict(fixedrange=True,),
