@@ -89,25 +89,29 @@ def load_npy_dataset(dataset_path: Path):
 
 
 def load_libs_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], np.array, list]:
-    for f in dataset_path.glob('**/*.libsdata'):
+    for file_path in dataset_path.glob('**/*.libsdata'):
         try:
-            meta = json.load(open(f.with_suffix('.libsmetadata'), 'r', encoding='utf8'))
+            meta = json.load(open(file_path.with_suffix('.libsmetadata'), 'r', encoding='utf8'))
             print('    Recognized .libsdata and .libsmetadata pair...', flush=True)
         except:
-            print('\n[WARNING] Failed to load metadata for file {}! Skipping!'.format(f), flush=True)
+            print('\n[WARNING] Failed to load metadata for file {}! Skipping!'.format(file_path), flush=True)
             continue
 
         try:
             print('    Loading dimensions...', end='', flush=True)
             try:
-                dim = [int(meta['yPosCount']), int(meta['xPosCount'])]
+                xs, ys = list(zip(*[(int(m['x']), int(m['y'])) for m in meta['data']]))
+                dim = [max(xs) - min(xs), max(ys) - min(ys)]
             except KeyError:
-                print('\n[WARNING] Dimensions could not be automatically deduced!')
-                dim = input('Please, input the x dimension'), input('Please, input the y dimension')
+                xs, ys = list(zip(*[(int(m['X']), int(m['Y'])) for m in meta['data']]))
+                dim = [max(xs) - min(xs), max(ys) - min(ys)]
+            except Exception as e:
+                print('\n[WARNING] Dimensions faild to load dimensions with error message: {}'.format(e))
+                dim = input('Please, input the x dimension: '), input('Please, input the y dimension: ')
             print(' Done!', flush=True)
 
             print('    Loading spectra...', end='', flush=True)
-            X = np.fromfile(open(f, 'rb'), dtype=np.float32)
+            X = np.fromfile(open(file_path, 'rb'), dtype=np.float32)
             print(' Done!', flush=True)
 
             print('    Loading wavelegnths...', end='', flush=True)
@@ -125,8 +129,8 @@ def load_libs_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array],
             print(' No true labels found! Skipping...', flush=True)
 
             return X, y, wavelengths, dim
-        except:
-            print('\n[WARNING] Failed to load! Skipping!'.format(f), flush=True)
+        except Exception as e:
+            print('\n[WARNING] Failed to load file {} with error message: {}. Skipping!'.format(file_path, e), flush=True)
             continue
     raise RuntimeError("Failed to load! No valid .libsdata and .libsmetadata found!")
 
@@ -160,7 +164,7 @@ def load_h5_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], n
             print(' Done!', flush=True)
 
             return X, y, wavelengths, dim
-        except:
-            print('\n[WARNING] Failed to load. Skipping!'.format(f), flush=True)
+        except Exception as e:
+            print('\n[WARNING] Failed to load file {} with error message: {}. Skipping!'.format(file_path, e), flush=True)
             continue
     raise RuntimeError('Failed to load! No valid file found!')
