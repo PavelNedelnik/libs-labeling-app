@@ -117,11 +117,14 @@ def plot_values_map(spectra_image, manual_labels, mask, num_classes):
     return fig
 
 
-def draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes):
+def draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes, colormap):
     fig = go.Figure()
     fig.add_trace(go.Image(z=img, hovertemplate='x: %{x} <br>y: %{y}', colormodel='rgba256'))
 
     add_colorbar(fig, zmin, zmax)
+
+    num_btns = num_classes + 1
+    y_offset = 0.1
 
     fig.update_layout(
         legend_orientation='h',
@@ -130,35 +133,44 @@ def draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes):
         paper_bgcolor='rgba(0, 0, 0, 0)',
         margin=dict(l=0, r=0, b=0, t=0, pad=0),
         uirevision=reset_ui,
-        updatemenus=list([
-            dict(type = "buttons",
-                direction = "down",
-                active = 0,
-                showactive = True,
+        updatemenus=[
+            dict(
+                type = "buttons",
                 x = 0,
-                y = 1,
+                y = y_offset + (i / num_btns) * (1 - y_offset),
+                bgcolor = colormap.get_plotly_color(i),
+                showactive = False,
                 buttons = [
                     dict(
                         label = f'Class {i}',
                         method = "relayout", 
-                        args = [{'newshape.line.color': px.colors.qualitative.Set1[i], 'newshape.label.text': str(i)}]
-                    ) for i in range(1, num_classes + 1)
-                ] + [
+                        args = [{'newshape.line.color': colormap.get_plotly_color(i), 'newshape.label.text': str(i)}]
+                    )
+                ]
+            ) for i in range(1, num_btns) 
+        ]  + [
+            dict(
+                type = "buttons",
+                x = 0,
+                y = y_offset,
+                bgcolor = colormap.get_empty_plotly_color(),
+                showactive = False,
+                buttons = [
                     dict(
                         label = f'Remove label',
                         method = "relayout", 
-                        args = [{'newshape.line.color': px.colors.qualitative.Set1[-1], 'newshape.label.text': '-1'}]
+                        args = [{'newshape.line.color': colormap.get_empty_plotly_color(), 'newshape.label.text': '-1'}]
                     )
                 ]
-            ),
-        ]),
+            )
+        ]
     )
 
     if state is None:
         fig.update_layout(
             dragmode='drawclosedpath',
             newshape=dict(
-                line=dict(color=px.colors.qualitative.Set1[1]),
+                line=dict(color=colormap.get_plotly_color(1)),
                 label=dict(text='1')
             ),
         )

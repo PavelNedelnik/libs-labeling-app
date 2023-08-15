@@ -309,7 +309,7 @@ def update_X_map(state, manual_labels, model_output, spectral_intensities, mode,
     else:
         raise NotImplementedError('Mode not recognized')
 
-    return draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes)
+    return draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes, colormap)
 
 
 @app.callback(
