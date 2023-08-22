@@ -31,140 +31,135 @@ def is_libs_dataset(path):
 def prompt_file():
     top = tkinter.Tk()
     top.withdraw()
-    file_name = tkinter.filedialog.askdirectory(parent=top)
+    file_name = tkinter.filedialog.askopenfilename(parent=top)
     top.destroy()
     return file_name
 
 
 def load_data():
-    print('Please, select a folder containing the data to be analyzed...', end='', flush=True)
+    print('Please, select a file containing the data to be analyzed...', end='', flush=True)
     path = Path(prompt_file())
     print(' Done!', flush=True)
-    if is_numpy_dataset(path):
+    if path.suffix == '.npy':
         print('Recognized as <numpy dataset>. Loading...', flush=True)
-        X, y, wavelengths, dim = load_npy_dataset(path)
-        print('Loading done! Launching the application...', flush=True)
-        return X, y, wavelengths, dim
-    elif is_h5_dataset(path):
+        X, wavelengths, dim = load_npy_dataset(path)
+    elif path.suffix == '.h5':
         print('Recognized as <h5 dataset>...', flush=True)
-        X, y, wavelengths, dim = load_h5_dataset(path)
-        print('Loading done! Launching the application...', flush=True)
-        return X, y, wavelengths, dim
-    elif is_libs_dataset(path):
+        X, wavelengths, dim = load_h5_dataset(path)
+    elif path.suffix == '.libsdata':
         print('Recognized as <libs dataset>...', flush=True)
-        X, y, wavelengths, dim = load_libs_dataset(path)
-        print('Loading done! Launching the application...', flush=True)
-        return X, y, wavelengths, dim
-
-
-def load_npy_dataset(dataset_path: Path):
-    print('    Loading dimensions...', end='', flush=True)
-    dim = json.load(open(dataset_path / 'dim.json', 'rb'))
-    print(' Done!', flush=True)
-
-
-    print('    Loading spectra...', end='', flush=True)
-    X = np.load(open(dataset_path / 'X.npy', 'rb'))
-    print(' Done!', flush=True)
+        X, wavelengths, dim = load_libs_dataset(path)
+    else:
+        raise RuntimeError('Not recognized as any of the supported formats!')
     
-    print('    Loading wavelengths...', end='', flush=True)
-    wavelengths = np.load(open(dataset_path / 'wavelengths.npy', 'rb'))
-    print(' Done!', flush=True)
-
-    print('    Reshaping spectra...', end='', flush=True)
-    X.resize(dim + [wavelengths.shape[0]])
-    X[::2, :] = X[::2, ::-1]
-    print(' Done!', flush=True)
+    y = None
+    prompt = 'Would you like to include ground truth labels? [y]es or [n]o: '
+    while input(prompt).lower() == 'y':
+        label_path = Path(prompt_file())
+        print('    Loading true labels...', end='', flush=True)
+        try:
+            y = np.array(json.load(open(label_path, 'rb')))
+            print(' Done!', flush=True)
+            break
+        except Exception as e:
+            print(' loading failed with error: {}'.format(e), flush=True)
+            prompt = 'Would you like to retry? [y]es or [n]o'
     
-    # labels
-    print('    Loading true labels...', end='', flush=True)
-    try:
-        y = np.array(json.load(open(dataset_path / 'y.json', 'rb')))
-        print(' Done!', flush=True)
-    except:
-        y = None
-        print(' No true labels found! Skipping!', flush=True)
-
+    print('Loading done! Launching the application...', flush=True)
     return X, y, wavelengths, dim
 
 
-def load_libs_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], np.array, list]:
-    for file_path in dataset_path.glob('**/*.libsdata'):
-        try:
-            meta = json.load(open(file_path.with_suffix('.libsmetadata'), 'r', encoding='utf8'))
-            print('    Recognized .libsdata and .libsmetadata pair...', flush=True)
-        except:
-            print('\n[WARNING] Failed to load metadata for file {}! Skipping!'.format(file_path), flush=True)
-            continue
+def load_npy_dataset(path: Path):
+    try:
+        dataset_path = path.parents[0]
 
+        print('    Loading dimensions...', end='', flush=True)
+        dim = json.load(open(dataset_path / 'dim.json', 'rb'))
+        print(' Done!', flush=True)
+
+
+        print('    Loading spectra...', end='', flush=True)
+        X = np.load(open(dataset_path / 'X.npy', 'rb'))
+        print(' Done!', flush=True)
+        
+        print('    Loading wavelengths...', end='', flush=True)
+        wavelengths = np.load(open(dataset_path / 'wavelengths.npy', 'rb'))
+        print(' Done!', flush=True)
+
+        print('    Reshaping spectra...', end='', flush=True)
+        X.resize(dim + [wavelengths.shape[0]])
+        X[::2, :] = X[::2, ::-1]
+        print(' Done!', flush=True)
+    except Exception as e:
+        raise RuntimeError('\nFailed to load data from directory {} with error message: {}.'.format(dataset_path, e))
+
+    return X, wavelengths, dim
+
+
+def load_libs_dataset(path: Path) -> Tuple[np.array, Optional[np.array], np.array, list]:
+    try:
+        meta_path = path.with_suffix('.libsmetadata')
+        meta = json.load(open(meta_path, 'r', encoding='utf8'))
+        print('    Recognized .libsdata and .libsmetadata pair...', flush=True)
+    except Exception as e:
+        raise RuntimeError('\nOpening metadata file {} ends with error: {}'.format(meta_path, e))
+
+    try:
+        print('    Loading dimensions...', end='', flush=True)
         try:
-            print('    Loading dimensions...', end='', flush=True)
             try:
                 xs, ys = list(zip(*[(int(m['x']), int(m['y'])) for m in meta['data']]))
                 dim = [max(xs) - min(xs), max(ys) - min(ys)]
             except KeyError:
                 xs, ys = list(zip(*[(int(m['X']), int(m['Y'])) for m in meta['data']]))
                 dim = [max(xs) - min(xs), max(ys) - min(ys)]
-            except Exception as e:
-                print('\n[WARNING] Dimensions faild to load dimensions with error message: {}'.format(e))
-                dim = input('Please, input the x dimension: '), input('Please, input the y dimension: ')
-            print(' Done!', flush=True)
-
-            print('    Loading spectra...', end='', flush=True)
-            X = np.fromfile(open(file_path, 'rb'), dtype=np.float32)
-            print(' Done!', flush=True)
-
-            print('    Loading wavelegnths...', end='', flush=True)
-            X = np.reshape(X, (int(meta['spectra']) + 1, int(meta['wavelengths'])))
-            wavelengths, X = X[0], X[1:]
-            print(' Done!', flush=True)
-
-            print('    Reshaping spectra...', end='', flush=True)
-            X = np.reshape(X, dim + [-1])
-            X[::2, :] = X[::2, ::-1]
-            print(' Done!', flush=True)
-
-            print('    Loading true labels...', end='', flush=True)
-            y = None  # TODO
-            print(' No true labels found! Skipping...', flush=True)
-
-            return X, y, wavelengths, dim
         except Exception as e:
-            print('\n[WARNING] Failed to load file {} with error message: {}. Skipping!'.format(file_path, e), flush=True)
-            continue
-    raise RuntimeError("Failed to load! No valid .libsdata and .libsmetadata found!")
+            print('\nFailed to load dimensions with error message: {}'.format(e))
+            dim = [int(input('Please, manually input the x dimension: ')), int(input('Please, manually input the y dimension: '))]
+        print(' Done!', flush=True)
+
+        print('    Loading spectra...', end='', flush=True)
+        X = np.fromfile(open(path, 'rb'), dtype=np.float32)
+        print(' Done!', flush=True)
+
+        print('    Loading wavelegnths...', end='', flush=True)
+        X = np.reshape(X, (int(meta['spectra']) + 1, int(meta['wavelengths'])))
+        wavelengths, X = X[0], X[1:]
+        print(' Done!', flush=True)
+
+        print('    Reshaping spectra...', end='', flush=True)
+        X = np.reshape(X, dim + [-1])
+        X[::2, :] = X[::2, ::-1]
+        print(' Done!', flush=True)
+    except Exception as e:
+        raise RuntimeError('\nFailed to load file {} with error message: {}.'.format(path, e))
+    
+    return X, wavelengths, dim
 
 
-def load_h5_dataset(dataset_path: Path) -> Tuple[np.array, Optional[np.array], np.array, list]:
-    for file_path in dataset_path.glob('**/*.h5'):
-        try:
-            f = h5py.File(file_path, "r")
-            f = f[list(f.keys())[0]]
-            f = f[list(f.keys())[0]]
-            f = f['libs']
-            print('    Loading dimensions...', end='', flush=True)
-            dim = [max(f['metadata']['X']) + 1, max(f['metadata']['Y']) + 1]
-            print(' Done!', flush=True)
+def load_h5_dataset(path: Path) -> Tuple[np.array, Optional[np.array], np.array, list]:
+    try:
+        f = h5py.File(path, "r")
+        f = f[list(f.keys())[0]]
+        f = f[list(f.keys())[0]]
+        f = f['libs']
+        print('    Loading dimensions...', end='', flush=True)
+        dim = [max(f['metadata']['X']) + 1, max(f['metadata']['Y']) + 1]
+        print(' Done!', flush=True)
 
-            print('    Loading spectra...', end='', flush=True)
-            X = f['data'][()]
-            print(' Done!', flush=True)
+        print('    Loading spectra...', end='', flush=True)
+        X = f['data'][()]
+        print(' Done!', flush=True)
 
-            print('    Loading wavelengths...', end='', flush=True)
-            wavelengths = np.array(f['calibration'])
-            print(' Done!', flush=True)
+        print('    Loading wavelengths...', end='', flush=True)
+        wavelengths = np.array(f['calibration'])
+        print(' Done!', flush=True)
 
-            print('    Reshaping spectra...', end='', flush=True)
-            X = np.reshape(X, dim + [-1])
-            X[::2, :] = X[::2, ::-1]
-            print(' Done!', flush=True)
+        print('    Reshaping spectra...', end='', flush=True)
+        X = np.reshape(X, dim + [-1])
+        X[::2, :] = X[::2, ::-1]
+        print(' Done!', flush=True)
+    except Exception as e:
+        raise RuntimeError('\nFailed to load file {} with error message: {}.'.format(path, e))
 
-            print('    Loading true labels...', end='', flush=True)
-            y = None  # TODO
-            print(' Done!', flush=True)
-
-            return X, y, wavelengths, dim
-        except Exception as e:
-            print('\n[WARNING] Failed to load file {} with error message: {}. Skipping!'.format(file_path, e), flush=True)
-            continue
-    raise RuntimeError('Failed to load! No valid file found!')
+    return X, wavelengths, dim
