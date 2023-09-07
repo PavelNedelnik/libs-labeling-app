@@ -6,21 +6,6 @@ from PIL import Image
 from matplotlib import cm
 from typing import Optional, Iterable
 
-def plot_map(values, colormap=cm.Reds):
-    values = np.uint8(colormap(values / values.max(), alpha=1.) * 255)
-    fig = px.imshow(img=values, labels={})
-
-    fig.update_traces(
-        hovertemplate='<',
-        hoverinfo='skip',
-    )
-
-    fig.update_layout(
-        dragmode='drawopenpath',
-        xaxis=dict(visible=False,),
-        yaxis=dict(visible=False, scaleanchor='x',),
-    )
-    return fig
 
 def plot_spectra(spectra: np.ndarray,
                  wavelengths: Optional[Iterable]=None,
@@ -73,48 +58,6 @@ def add_colorbar(fig, min_val, max_val):
             ticks="inside"
         )
     ))
-
-
-def plot_labels_map(y_true, mask, num_classes):
-    img = cm.Set1(y_true / (num_classes), alpha=1) * 255
-    img[y_true == -2, :] = (128, 128, 128, 255)
-    img = np.where(mask == -2, 128, img)
-
-    fig = go.Figure()
-    fig.add_trace(go.Image(z=img))
-
-    add_legend(fig, num_classes)
-
-    return fig
-
-
-def plot_output_map(y, mask, manual_labels, num_classes):
-    manual_labels = cm.Set1(manual_labels / (num_classes), alpha=1.) * 255
-    y = cm.Set1(y / (num_classes), alpha=.8) * 255
-    img = np.where(mask >= 0, manual_labels, y)
-    img = np.where(mask == -2, 128, img)
-    
-    fig = go.Figure()
-    fig.add_trace(go.Image(z=img))
-
-    add_legend(fig, num_classes)
-
-    return fig
-
-
-def plot_values_map(spectra_image, manual_labels, mask, num_classes):
-    manual_labels = cm.Set1(manual_labels / (num_classes), alpha=1.) * 255
-    spectra_image = cm.Reds((spectra_image - spectra_image.min()) / spectra_image.max(), alpha=1.) * 255
-    img = np.where(mask >= 0, manual_labels, spectra_image)
-    img = np.where(mask == -2, 128, img)
-
-    fig = go.Figure()
-    fig.add_trace(go.Image(z=img))
-
-    add_legend(fig, num_classes)
-    add_colorbar(fig, spectra_image.min(), spectra_image.max())
-
-    return fig
 
 
 def draw_hyperspectral_image(img, zmin, zmax, reset_ui, state, num_classes, colormap):

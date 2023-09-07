@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import dash_bootstrap_components as dbc
-import plotly.express as px
 import io
 from dash import Dash, html, Input, Output, State, dcc
 from dash import callback_context as ctx
@@ -15,23 +14,32 @@ from segmentation.models import models, model_names
 from utils.visualization import plot_spectra, draw_hyperspectral_image
 from utils.rasterization import rasterize_and_draw
 from utils.application import coordinates_from_hover_data
-from utils.load_scripts import load_data
+from utils.load_scripts import run_wizard
 from utils.app_modes import App_modes
 from utils.colors import Set1Colormap
 from base64 import b64decode
 from matplotlib import cm
 from sklearn.cluster import KMeans
 
+####################################################################################################
+## Data import                                                                                    ##
+####################################################################################################
 
+
+# could also be set through the loading wizard
 num_classes = 7
 colormap = Set1Colormap(num_classes)
 app_mode = App_modes.Default
 
-X, y_true, wavelengths, dim = load_data()
+X, y_true, wavelengths, dim = run_wizard()
 
 
-# precompute mean (mostly) for selected spectrum plot
+# precompute mean to speed up generating selected spectrum plot
 mean_spectrum = X.mean(axis=(0, 1))
+
+####################################################################################################
+## Application layout                                                                             ##
+####################################################################################################
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.FLATLY])
 app.title = 'LIBS Segmentation'
@@ -65,6 +73,9 @@ app.layout = html.Div([
     ], fluid=True)
 ])
 
+####################################################################################################
+## Callbacks                                                                                      ##
+####################################################################################################
 
 @app.callback(
     Output('retrain_btn', 'outline'),
@@ -73,7 +84,7 @@ app.layout = html.Div([
     Input('model_identifier', 'value'),
     prevent_initial_call=True
 )
-def highlight_retrain_btn(retrain, manual_labels, model_id):
+def highlight_retrain_btn(_, manual_labels, __):
     if ctx.triggered_id == 'retrain_btn':
         return True
     return manual_labels is not None
@@ -87,7 +98,7 @@ def highlight_retrain_btn(retrain, manual_labels, model_id):
     State('model_output', 'data'),
     prevent_initial_call=True
 )
-def download_files(l_click, s_click, manual_labels, model_out):
+def download_files(_, __, manual_labels, model_out):
     if ctx.triggered_id == 'save_labels':
         return dcc.send_data_frame(pd.DataFrame(manual_labels).to_csv, "manual_labels.csv")
     # save_output
@@ -100,11 +111,12 @@ def download_files(l_click, s_click, manual_labels, model_out):
     prevent_initial_call=True,
 )
 def upload_labels(upload):
-    content_type, content_string = upload.split(",")
+    _, content_string = upload.split(",")
     decoded = b64decode(content_string)
     return pd.read_csv(io.BytesIO(decoded), sep=',', header=0, index_col=0).values
 
 
+# if true labels are known in advance, calculates the accuracy of the predicted labels
 if app_mode == App_modes.Benchmark:
     from itertools import permutations
     @app.callback(
@@ -131,7 +143,7 @@ if app_mode == App_modes.Benchmark:
     Input('reset_manual_labels_btn', 'submit_n_clicks'),
     Input('x_map', 'relayoutData')
 )
-def update_manual_labels(memory, apply, reset, relayout, width=2):
+def update_manual_labels(memory, _, __, relayout):
     if ctx.triggered_id == 'reset_manual_labels_btn' or memory is None:
         return np.zeros(dim) - 1
     if ctx.triggered_id == 'apply_changes_btn' and 'shapes' in relayout:
@@ -160,12 +172,13 @@ def update_additional_model_arguments(model_id):
     State('additional_model_arguments', 'children'),
     prevent_initial_call=True
 )
-def update_model_output(retrain, labels, model_id, additional_args):
+def update_model_output(_, labels, model_id, additional_args):
     y_in = np.array(labels).flatten()
     if all(y_in < 0) and not model_id == '0':  # kmeans is unsupervised
         raise PreventUpdate
     X_in = X.reshape((-1, wavelengths.shape[0]))
-    model = models[int(model_id)] if not model_id == '0' else KMeans(n_clusters=additional_args[0]['props']['value'], n_init='auto')
+    model = models[int(model_id)] if not model_id == '0' else \
+        KMeans(n_clusters=additional_args[0]['props']['value'], n_init='auto')
     return model.fit(X_in, y_in).predict(X_in).reshape(dim)
 
 
@@ -177,7 +190,8 @@ def update_spectral_intensities(wave_range):
     if wave_range is None or "xaxis.autorange" in wave_range or 'autosize' in wave_range:
         return X.sum(axis=2)
     else:
-        return X[:, :, (wavelengths >= float(wave_range["xaxis.range[0]"])) & (wavelengths <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
+        return X[:, :, (wavelengths >= float(wave_range["xaxis.range[0]"])) & \
+                 (wavelengths <= float(wave_range["xaxis.range[1]"]))].sum(axis=2)
 
 
 @app.callback(
@@ -186,7 +200,10 @@ def update_spectral_intensities(wave_range):
     Input('reset_manual_labels_btn', 'submit_n_clicks'),
     Input('apply_changes_btn', 'n_clicks'),
 )
-def update_revision(memory, *args):
+def update_revision(memory, _, __):
+    """
+    Controls whether the x_map should be recalculated.
+    """
     if memory is None:
         return 0
     return memory + 1 % 2
@@ -200,7 +217,7 @@ def make_spectral_image(spectral_intensities):
     return spectral_image, zmin, zmax
 
 
-def make_model_output_image(model_output, num_classes):
+def make_model_output_image(model_output):
     model_output = np.array(model_output)
     return colormap.get_color_tuples(model_output, 0.6)
 
@@ -211,7 +228,7 @@ def make_true_output_image():
     return img
 
 
-def add_manual_labels(img, manual_labels, num_classes, add_input):
+def add_manual_labels(img, manual_labels, add_input):
     if add_input % 2 == 0:
         manual_labels = np.array(manual_labels)
         manual_labels_image = colormap.get_color_tuples(manual_labels, 1)
@@ -221,7 +238,9 @@ def add_manual_labels(img, manual_labels, num_classes, add_input):
 
 
 def check_if_update(ctx, buffer_id, add_input):
-    if ctx.triggered_id not in [buffer_id, 'image_output_mode_btn', 'show_input_btn', 'manual_labels']:
+    if ctx.triggered_id not in [
+        buffer_id, 'image_output_mode_btn', 'show_input_btn', 'manual_labels'
+    ]:
         raise PreventUpdate
     if ctx.triggered_id == 'manual_labels' and add_input % 2 == 1:
         raise PreventUpdate
@@ -232,7 +251,7 @@ def check_if_update(ctx, buffer_id, add_input):
     Input('show_input_btn', 'n_clicks'),
 
 )
-def update_test(n_clicks):
+def update_show_input_btn_outline(n_clicks):
     return n_clicks % 2 == 1
 
 
@@ -242,7 +261,7 @@ def update_test(n_clicks):
     State('model_identifier', 'value')
 
 )
-def update_last_trained_model(click, val):
+def update_last_trained_model_name(_, val):
     return str(model_names[int(val)][1])
 
 
@@ -293,19 +312,19 @@ def update_image_output_mode_btn(options, model_output):
     Input('show_input_btn', 'n_clicks'),
     State('uirevision', 'children')
 )
-def update_X_map(state, manual_labels, model_output, spectral_intensities, mode, add_input, reset_ui):
+def update_X_map_plot(state, manual_labels, model_output, spectral_intensities, mode, add_input, reset_ui):
     if mode is None or mode == 'show_spectra':
         check_if_update(ctx, 'spectral_intensities', add_input)
         img, zmin, zmax = make_spectral_image(spectral_intensities)
-        img = add_manual_labels(img, manual_labels, num_classes, add_input)
+        img = add_manual_labels(img, manual_labels, add_input)
     elif mode == 'show_output':
         check_if_update(ctx, 'model_output', add_input)
-        img, zmin, zmax = make_model_output_image(model_output, num_classes), 0, 0
-        img = add_manual_labels(img, manual_labels, num_classes, add_input)
+        img, zmin, zmax = make_model_output_image(model_output), 0, 0
+        img = add_manual_labels(img, manual_labels, add_input)
     elif mode == 'show_true_labels':
         check_if_update(ctx, 'no_buffer', add_input)
         img, zmin, zmax = make_true_output_image(), 0, 0
-        img = add_manual_labels(img, manual_labels, num_classes, add_input)
+        img = add_manual_labels(img, manual_labels, add_input)
     else:
         raise NotImplementedError('Mode not recognized')
 
@@ -316,7 +335,7 @@ def update_X_map(state, manual_labels, model_output, spectral_intensities, mode,
     Output('selected_spectrum', 'figure'),
     Input('x_map', 'hoverData'),
 )
-def update_selected_spectrum(hover):
+def update_selected_spectrum_plot(hover):
     if hover is not None:
         x, y = coordinates_from_hover_data(hover)
     else:
@@ -340,7 +359,7 @@ def update_selected_spectrum(hover):
     Output('global_spectrum', 'figure'),
     Input('model_output', 'data'),
 )
-def update_global_spectrum(y):
+def update_global_spectrum_plot(y):
     spectra = [mean_spectrum]
     labels = ['global mean']
     colors = [colormap.get_empty_plotly_color()]

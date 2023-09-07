@@ -36,7 +36,7 @@ def prompt_file():
     return file_name
 
 
-def load_data():
+def run_wizard():
     print('Please, select a file containing the data to be analyzed...', end='', flush=True)
     path = Path(prompt_file())
     print(' Done!', flush=True)

@@ -1,3 +1,5 @@
+## currently not used
+
 from matplotlib import cm
 
 CLASS_COLORS = cm.Set1
