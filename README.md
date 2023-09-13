@@ -1,5 +1,5 @@
 ## Overview
-This app is designed for labeling spectra obtained by Laser-Induced Breakdown Spectroscopy. The main entry point to the application is the /src/app.py script which, when run, will run a simple wizard to gain access to the spectra to be analyzed and launch an interactive Plotly Dash application on localhost (currently configured to )
+This app is designed for labeling spectra obtained by Laser-Induced Breakdown Spectroscopy. The main entry point to the application is the [src/app.py](src/app.py) script which, when run, will run a simple wizard to gain access to the spectra to be analyzed and launch an interactive Plotly Dash application on localhost (currently configured to )
 
 ## Structure
 
