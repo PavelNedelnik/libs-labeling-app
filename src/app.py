@@ -366,7 +366,7 @@ def update_global_spectrum_plot(y):
     if y is not None:
         for cls in np.unique(y):
             spectra.append(X[y==cls].mean(axis=0))
-            labels.append(f'class {cls} mean')
+            labels.append(f'predicted class {cls} mean')
             colors.append(colormap.get_plotly_color(cls))
     fig = plot_spectra(spectra=spectra, wavelengths=wavelengths, labels=labels, colormap=colors)
     fig.update_layout(
