@@ -45,14 +45,6 @@ $ ./src/app.py
 └── requirements.txt          # required packages
 ```
 
-# Sharing the Application
-A single file executable version of the application can be created using [PyInstaller](https://pyinstaller.org/en/stable/) with the following commands (when starting from the root folder of the project).
-
-```
-cd src
-pyinstaller --onefile app.py
-```
-
 # Adding Machine Learning Models
 TODO
 
